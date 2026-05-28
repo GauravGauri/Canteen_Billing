@@ -60,6 +60,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const register = async (username, password) => {
+    try {
+      const response = await axios.post('/auth/register', { username, password });
+      if (response.data.success) {
+        const { token: userToken, ...userData } = response.data.data;
+        localStorage.setItem('admin_token', response.data.data.token);
+        setToken(response.data.data.token);
+        setUser(response.data.data);
+        return { success: true };
+      }
+      return { success: false, message: response.data.message || 'Registration failed' };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Server error, please try again later',
+      };
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('admin_token');
     setToken(null);
@@ -72,6 +91,7 @@ export const AuthProvider = ({ children }) => {
     token,
     loading,
     login,
+    register,
     logout,
   };
 

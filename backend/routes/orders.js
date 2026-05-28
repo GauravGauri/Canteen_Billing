@@ -9,10 +9,9 @@ const {
   printBill,
   getDashboardStats,
 } = require('../controllers/orderController');
-const { protect, adminOnly } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware');
 
 router.use(protect);
-router.use(adminOnly);
 
 router.route('/stats')
   .get(getDashboardStats);

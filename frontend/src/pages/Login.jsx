@@ -4,12 +4,13 @@ import { useAuth } from '../context/AuthContext';
 import { Utensils, Lock, User, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
-  const { login, token } = useAuth();
+  const { login, register, token } = useAuth();
   const navigate = useNavigate();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -29,11 +30,14 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const res = await login(username, password);
+      const res = isSignUp
+        ? await register(username, password)
+        : await login(username, password);
+        
       if (res.success) {
         navigate('/pos');
       } else {
-        setError(res.message || 'Invalid username or password');
+        setError(res.message || (isSignUp ? 'Registration failed' : 'Invalid username or password'));
       }
     } catch (err) {
       setError('Connection failure, check if backend is running.');
@@ -54,8 +58,12 @@ const Login = () => {
           <div className="p-3.5 rounded-2xl bg-brand-600/10 text-brand-400 border border-brand-500/20 mb-3 shadow-lg shadow-brand-500/5">
             <Utensils className="w-8 h-8" />
           </div>
-          <h2 className="text-3xl font-extrabold text-white tracking-tight">BiteFlow Terminal</h2>
-          <p className="text-sm text-slate-400 mt-1.5">Sign in to manage billing & inventory</p>
+          <h2 className="text-3xl font-extrabold text-white tracking-tight">
+            {isSignUp ? 'Create Account' : 'BiteFlow Terminal'}
+          </h2>
+          <p className="text-sm text-slate-400 mt-1.5 text-center">
+            {isSignUp ? 'Register to manage your canteen POS & inventory' : 'Sign in to manage billing & inventory'}
+          </p>
         </div>
 
         {/* Card */}
@@ -79,7 +87,7 @@ const Login = () => {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter administrator username"
+                  placeholder={isSignUp ? "Choose a username" : "Enter administrator username"}
                   className="w-full pl-11 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all text-sm"
                 />
               </div>
@@ -118,17 +126,39 @@ const Login = () => {
               {loading ? (
                 <div className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                  <span>Authenticating...</span>
+                  <span>{isSignUp ? 'Registering...' : 'Authenticating...'}</span>
                 </div>
               ) : (
-                'Sign In'
+                isSignUp ? 'Create Account' : 'Sign In'
               )}
             </button>
           </form>
 
-          {/* Seed hint */}
+          {/* Toggle login/signup link */}
           <div className="mt-6 pt-6 border-t border-slate-800/80 text-center text-xs text-slate-500">
-            <p>Default credentials: <span className="text-brand-400 font-semibold">admin</span> / <span className="text-brand-400 font-semibold">admin123</span></p>
+            {isSignUp ? (
+              <p>
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setIsSignUp(false); setError(''); }}
+                  className="text-brand-400 font-semibold hover:text-brand-350 transition-colors bg-transparent border-0 cursor-pointer p-0"
+                >
+                  Sign In
+                </button>
+              </p>
+            ) : (
+              <p>
+                Don't have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setIsSignUp(true); setError(''); }}
+                  className="text-brand-400 font-semibold hover:text-brand-350 transition-colors bg-transparent border-0 cursor-pointer p-0"
+                >
+                  Sign Up
+                </button>
+              </p>
+            )}
           </div>
         </div>
       </div>

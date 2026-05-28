@@ -1,10 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { getTables, createTable, updateTable, deleteTable } = require('../controllers/tableController');
-const { protect, adminOnly } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware');
 
 router.use(protect);
-router.use(adminOnly);
 
 router.route('/')
   .get(getTables)
