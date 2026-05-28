@@ -1,0 +1,133 @@
+@import "tailwindcss";
+
+:root {
+  /* Dark Mode values (Default) */
+  --bg-app: #090d16;
+  --bg-sidebar: #030712;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+  --border-color: rgba(255, 255, 255, 0.05);
+  --border-color-strong: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(30, 41, 59, 0.7);
+  --glass-card-bg: rgba(15, 23, 42, 0.6);
+  --bg-input: #020617;
+  --bg-table-header: #020617;
+}
+
+:root.light {
+  /* Light Mode values */
+  --bg-app: #f1f5f9;
+  --bg-sidebar: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #94a3b8;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-color-strong: rgba(0, 0, 0, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-card-bg: rgba(255, 255, 255, 0.75);
+  --bg-input: #ffffff;
+  --bg-table-header: #e2e8f0;
+}
+
+@theme {
+  --color-brand-50: #f5f7ff;
+  --color-brand-100: #ebf0ff;
+  --color-brand-200: #d6e0ff;
+  --color-brand-300: #b3c7ff;
+  --color-brand-400: #85a3ff;
+  --color-brand-500: #5275ff;
+  --color-brand-600: #3350eb;
+  --color-brand-700: #263bc4;
+  --color-brand-800: #23329e;
+  --color-brand-900: #212d7d;
+  --color-brand-950: #151b4b;
+
+  /* Dynamically map Tailwind colors to CSS theme variables */
+  --color-slate-900: var(--bg-app);
+  --color-slate-950: var(--bg-sidebar);
+  --color-slate-100: var(--text-primary);
+  --color-slate-200: var(--text-primary);
+  --color-slate-300: var(--text-secondary);
+  --color-slate-400: var(--text-secondary);
+  --color-slate-500: var(--text-muted);
+  --color-slate-800: var(--border-color);
+  --color-slate-850: var(--border-color-strong);
+}
+
+@utility glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+@utility glass-card {
+  background: var(--glass-card-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+body {
+  @apply bg-slate-900 text-slate-100 font-sans antialiased selection:bg-brand-500 selection:text-white;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background-color: var(--bg-sidebar);
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--border-color-strong);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-brand-500;
+}
+
+/* Hide print layout in normal screen view */
+.print-only {
+  display: none;
+}
+
+/* Print CSS Styles for POS slips & KOTs */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  .print-area, .print-area * {
+    visibility: visible;
+  }
+  
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm; /* standard POS receipt width */
+    color: #000000 !important;
+    background: #ffffff !important;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    padding: 2mm;
+    box-sizing: border-box;
+  }
+  
+  /* Reset print styles */
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Ensure correct scaling on printed slips */
+  @page {
+    size: auto;
+    margin: 0mm;
+  }
+}
