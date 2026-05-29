@@ -5,7 +5,7 @@ const Supplier = require('../models/Supplier');
 // @access  Private (Admin)
 const getSuppliers = async (req, res) => {
   try {
-    const suppliers = await Supplier.find({}).sort({ name: 1 });
+    const suppliers = await Supplier.find({}).sort({ name: 1 }).lean();
     res.json({ success: true, data: suppliers });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

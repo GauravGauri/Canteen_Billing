@@ -64,7 +64,8 @@ const getOrders = async (req, res) => {
   try {
     const orders = await Order.find(filter)
       .populate('tableId', 'tableNo')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     res.json({ success: true, data: orders });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -278,69 +279,111 @@ const printBill = async (req, res) => {
 // @access  Private (Admin)
 const getDashboardStats = async (req, res) => {
   try {
-    // 1. Total revenue
-    const paidOrders = await Order.find({ status: 'paid' });
-    const totalRevenue = paidOrders.reduce((sum, order) => sum + order.total, 0);
+    // 1. Total revenue (aggregated directly in MongoDB)
+    const paidStats = await Order.aggregate([
+      { $match: { status: 'paid' } },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: '$total' },
+        },
+      },
+    ]);
+    const totalRevenue = paidStats[0]?.totalRevenue || 0;
 
-    // 2. Active orders count (kitchen or served)
+    // 2. Active orders count (kitchen or served) - using optimized countDocuments
     const activeOrdersCount = await Order.countDocuments({ status: { $in: ['kitchen', 'served'] } });
 
     // 3. Pending bills count (unpaid kitchen/served orders)
-    const pendingBillsCount = await Order.countDocuments({ status: { $in: ['kitchen', 'served'] }, paymentMethod: 'unpaid' });
+    const pendingBillsCount = await Order.countDocuments({
+      status: { $in: ['kitchen', 'served'] },
+      paymentMethod: 'unpaid',
+    });
 
     // 4. Occupied tables count
     const occupiedTablesCount = await Table.countDocuments({ status: { $in: ['occupied', 'billed'] } });
 
-    // 5. Monthly & Yearly revenue
+    // 5. Monthly & Yearly revenue (single aggregation filtering since start of year)
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfYear = new Date(now.getFullYear(), 0, 1);
 
-    const monthlyOrders = await Order.find({ status: 'paid', createdAt: { $gte: startOfMonth } });
-    const revenueThisMonth = monthlyOrders.reduce((sum, o) => sum + o.total, 0);
+    const periodicStats = await Order.aggregate([
+      {
+        $match: {
+          status: 'paid',
+          createdAt: { $gte: startOfYear },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          revenueThisYear: { $sum: '$total' },
+          revenueThisMonth: {
+            $sum: {
+              $cond: [{ $gte: ['$createdAt', startOfMonth] }, '$total', 0],
+            },
+          },
+        },
+      },
+    ]);
+    const revenueThisMonth = periodicStats[0]?.revenueThisMonth || 0;
+    const revenueThisYear = periodicStats[0]?.revenueThisYear || 0;
 
-    const yearlyOrders = await Order.find({ status: 'paid', createdAt: { $gte: startOfYear } });
-    const revenueThisYear = yearlyOrders.reduce((sum, o) => sum + o.total, 0);
+    // 6. Last 7 Days Sales Trend (1 fast query + filtering in memory instead of 7 DB roundtrips)
+    const startOfTrend = new Date();
+    startOfTrend.setDate(startOfTrend.getDate() - 6);
+    startOfTrend.setHours(0, 0, 0, 0);
 
-    // 6. Last 7 Days Sales Trend
+    const trendOrders = await Order.find({
+      status: 'paid',
+      createdAt: { $gte: startOfTrend },
+    })
+      .select('total createdAt')
+      .lean();
+
     const salesTrend = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       d.setHours(0, 0, 0, 0);
-      
+
       const nextD = new Date(d);
       nextD.setDate(nextD.getDate() + 1);
 
-      const dailyOrders = await Order.find({
-        status: 'paid',
-        createdAt: { $gte: d, $lt: nextD }
-      });
-
+      const dailyOrders = trendOrders.filter((o) => o.createdAt >= d && o.createdAt < nextD);
       const revenue = dailyOrders.reduce((sum, o) => sum + o.total, 0);
       const dayLabel = d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
       salesTrend.push({ date: dayLabel, revenue });
     }
 
-    // 7. Category-wise sales distribution (for pie chart)
-    const dishes = await Dish.find({});
-    const dishCategoryMap = {};
-    dishes.forEach(dish => {
-      dishCategoryMap[dish._id.toString()] = dish.category;
-    });
-
-    const categorySalesMap = {};
-    paidOrders.forEach(order => {
-      order.items.forEach(item => {
-        const category = dishCategoryMap[item.dishId.toString()] || 'Other';
-        categorySalesMap[category] = (categorySalesMap[category] || 0) + item.quantity;
-      });
-    });
-
-    const categorySales = Object.keys(categorySalesMap).map(cat => ({
-      name: cat,
-      value: categorySalesMap[cat]
-    }));
+    // 7. Category-wise sales distribution (aggregated using $lookup, $unwind, and $group in DB)
+    const categorySales = await Order.aggregate([
+      { $match: { status: 'paid' } },
+      { $unwind: '$items' },
+      {
+        $lookup: {
+          from: 'dishes',
+          localField: 'items.dishId',
+          foreignField: '_id',
+          as: 'dishDetails',
+        },
+      },
+      { $unwind: { path: '$dishDetails', preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: { $ifNull: ['$dishDetails.category', 'Other'] },
+          value: { $sum: '$items.quantity' },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          name: '$_id',
+          value: 1,
+        },
+      },
+    ]);
 
     res.json({
       success: true,
@@ -352,8 +395,8 @@ const getDashboardStats = async (req, res) => {
         revenueThisMonth,
         revenueThisYear,
         salesTrend,
-        categorySales
-      }
+        categorySales,
+      },
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

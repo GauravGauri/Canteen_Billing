@@ -5,7 +5,7 @@ const Table = require('../models/Table');
 // @access  Private (Admin)
 const getTables = async (req, res) => {
   try {
-    const tables = await Table.find({}).populate('currentOrderId').sort({ tableNo: 1 });
+    const tables = await Table.find({}).populate('currentOrderId').sort({ tableNo: 1 }).lean();
     res.json({ success: true, data: tables });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

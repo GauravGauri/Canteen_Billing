@@ -30,4 +30,7 @@ const supplierSchema = new mongoose.Schema(
   }
 );
 
+// Index name for sorting alphabetical lists of suppliers
+supplierSchema.index({ name: 1 });
+
 module.exports = mongoose.model('Supplier', supplierSchema);

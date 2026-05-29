@@ -5,12 +5,15 @@ const connectDB = require('./config/db');
 const User = require('./models/User');
 const Table = require('./models/Table');
 
+const compression = require('compression');
+
 // Connect to Database
 connectDB();
 
 const app = express();
 
 // Middlewares
+app.use(compression());
 app.use(cors());
 app.use(express.json());
 

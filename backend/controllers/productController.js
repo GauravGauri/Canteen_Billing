@@ -5,7 +5,7 @@ const Product = require('../models/Product');
 // @access  Private (Admin)
 const getProducts = async (req, res) => {
   try {
-    const products = await Product.find({}).sort({ name: 1 });
+    const products = await Product.find({}).sort({ name: 1 }).lean();
     res.json({ success: true, data: products });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

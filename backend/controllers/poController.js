@@ -18,7 +18,8 @@ const getPOs = async (req, res) => {
     const pos = await PurchaseOrder.find({})
       .populate('supplierId', 'name contactPerson phone')
       .populate('items.productId', 'name unit stockQuantity minStockLevel')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     res.json({ success: true, data: pos });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

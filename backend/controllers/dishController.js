@@ -7,7 +7,8 @@ const getDishes = async (req, res) => {
   try {
     const dishes = await Dish.find({})
       .populate('recipe.productId', 'name unit stockQuantity minStockLevel costPrice')
-      .sort({ name: 1 });
+      .sort({ name: 1 })
+      .lean();
     res.json({ success: true, data: dishes });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

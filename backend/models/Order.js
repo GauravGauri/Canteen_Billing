@@ -82,4 +82,9 @@ const orderSchema = new mongoose.Schema(
   }
 );
 
+// Optimize queries sorting or filtering by status and/or creation date
+orderSchema.index({ status: 1 });
+orderSchema.index({ createdAt: -1 });
+orderSchema.index({ status: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Order', orderSchema);
