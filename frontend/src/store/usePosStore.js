@@ -314,4 +314,67 @@ export const usePosStore = create((set, get) => ({
       set({ loading: false });
     }
   },
+
+  quickBill: async (method = 'cash') => {
+    const { cart, selectedTable, orderType, discount, onlinePlatform, currentOrder } = get();
+    if (cart.length === 0) return;
+
+    set({ loading: true });
+    try {
+      const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      const tax = Number(((subtotal * get().taxRate) / 100).toFixed(2));
+      const netTotal = Math.max(0, subtotal + tax - discount);
+
+      let activeOrderToSettle = currentOrder;
+
+      if (!activeOrderToSettle) {
+        const createPaidPayload = {
+          tableId: selectedTable ? selectedTable._id : null,
+          type: orderType,
+          items: cart,
+          subTotal: subtotal,
+          tax,
+          discount,
+          total: netTotal,
+          status: 'paid',
+          paymentMethod: method,
+          paymentDetails: orderType === 'online' ? `Platform: ${onlinePlatform}` : 'Quick Bill',
+        };
+        const response = await axios.post('/orders', createPaidPayload);
+        if (response.data.success) {
+          activeOrderToSettle = response.data.data;
+        }
+      } else {
+        const response = await axios.put(`/orders/${activeOrderToSettle._id}`, {
+          status: 'paid',
+          paymentMethod: method,
+          paymentDetails: orderType === 'online' ? `Platform: ${onlinePlatform}` : 'Quick Bill',
+        });
+        if (response.data.success) {
+          activeOrderToSettle = response.data.data;
+        }
+      }
+
+      if (activeOrderToSettle) {
+        set({
+          printedOrder: activeOrderToSettle,
+          isSettleModalOpen: false,
+          showInvoiceModal: true,
+          cart: [],
+          discount: 0,
+          currentOrder: null,
+          selectedTable: null,
+          orderType: 'takeaway',
+          tableActiveOrders: [],
+          paymentDetails: '',
+        });
+        get().fetchTables();
+        get().showMsg('success', `Quick bill settled successfully via ${method.toUpperCase()}`);
+      }
+    } catch (err) {
+      get().showMsg('error', err.response?.data?.message || 'Quick bill settlement failed. Check ingredient stock levels.');
+    } finally {
+      set({ loading: false });
+    }
+  },
 }));

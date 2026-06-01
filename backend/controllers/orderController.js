@@ -109,12 +109,13 @@ const createOrder = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Order items are required' });
     }
 
-    // Verify all dishes exist
+    // Verify all dishes exist and populate category
     for (const item of items) {
       const dish = await Dish.findById(item.dishId);
       if (!dish) {
         return res.status(404).json({ success: false, message: `Dish not found: ${item.name}` });
       }
+      item.category = dish.category;
     }
 
     const billNo = await generateBillNumber();
@@ -172,6 +173,15 @@ const updateOrder = async (req, res) => {
 
     // Check if items changed (e.g. items added to running order)
     if (items && JSON.stringify(order.items) !== JSON.stringify(items)) {
+      // Fetch dish categories for updated items
+      for (const item of items) {
+        if (!item.category) {
+          const dish = await Dish.findById(item.dishId);
+          if (dish) {
+            item.category = dish.category;
+          }
+        }
+      }
       // Revert old stock deduction
       if (oldStatus !== 'pending') {
         await restoreStock(order.items);
@@ -369,22 +379,13 @@ const getDashboardStats = async (req, res) => {
       salesTrend.push({ date: dayLabel, revenue });
     }
 
-    // 7. Category-wise sales distribution (aggregated using $lookup, $unwind, and $group in DB)
+    // 7. Category-wise sales distribution (fully optimized without $lookup)
     const categorySales = await Order.aggregate([
       { $match: { status: 'paid' } },
       { $unwind: '$items' },
       {
-        $lookup: {
-          from: 'dishes',
-          localField: 'items.dishId',
-          foreignField: '_id',
-          as: 'dishDetails',
-        },
-      },
-      { $unwind: { path: '$dishDetails', preserveNullAndEmptyArrays: true } },
-      {
         $group: {
-          _id: { $ifNull: ['$dishDetails.category', 'Other'] },
+          _id: { $ifNull: ['$items.category', 'Other'] },
           value: { $sum: '$items.quantity' },
         },
       },
@@ -397,6 +398,11 @@ const getDashboardStats = async (req, res) => {
       },
     ]);
 
+    // 8. Low Stock Raw Material/Products directly from DB
+    const lowStockProducts = await Product.find({
+      $expr: { $lte: ['$stockQuantity', '$minStockLevel'] },
+    }).lean();
+
     res.json({
       success: true,
       data: {
@@ -408,6 +414,7 @@ const getDashboardStats = async (req, res) => {
         revenueThisYear,
         salesTrend,
         categorySales,
+        lowStockProducts,
       },
     });
   } catch (error) {
