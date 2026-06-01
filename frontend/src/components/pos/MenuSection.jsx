@@ -65,7 +65,7 @@ const MenuSection = () => {
               <span className="text-[10px] font-bold text-brand-400 bg-brand-500/5 border border-brand-500/10 px-2 py-0.5 rounded-full uppercase">
                 {dish.category}
               </span>
-              <h4 className="font-bold text-white text-sm mt-2.5 group-hover:text-brand-400 transition-colors">
+              <h4 className="font-bold text-slate-100 text-sm mt-2.5 group-hover:text-brand-400 transition-colors">
                 {dish.name}
               </h4>
               {dish.description && (
@@ -76,7 +76,7 @@ const MenuSection = () => {
             </div>
             
             <div className="flex items-center justify-between mt-4">
-              <span className="font-bold text-base text-white">₹{dish.price}</span>
+              <span className="font-bold text-base text-slate-100">₹{dish.price}</span>
               <div className="p-1.5 rounded-lg bg-slate-800 text-brand-400 hover:bg-brand-600 hover:text-white transition-colors">
                 <Plus className="w-4 h-4" />
               </div>

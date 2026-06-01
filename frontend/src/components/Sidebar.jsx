@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import {
   Utensils,
@@ -11,14 +12,33 @@ import {
   LogOut,
   Sparkles,
   LayoutDashboard,
+  Globe,
 } from 'lucide-react';
 
 const Sidebar = () => {
   const { logout, user } = useAuth();
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    const fetchPendingCount = async () => {
+      try {
+        const response = await axios.get('/orders', { params: { status: 'pending' } });
+        if (response.data.success) {
+          setPendingCount(response.data.data.length);
+        }
+      } catch (err) {
+        console.error("Error fetching pending orders count", err);
+      }
+    };
+    fetchPendingCount();
+    const interval = setInterval(fetchPendingCount, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const links = [
     { to: '/dashboard', name: 'Dashboard', icon: LayoutDashboard },
     { to: '/pos', name: 'POS Terminal', icon: Utensils },
+    { to: '/online-orders', name: 'Online Orders', icon: Globe, isOnline: true },
     { to: '/billing-history', name: 'Billing History', icon: History },
     { to: '/inventory', name: 'Inventory', icon: Boxes },
     { to: '/dish-creator', name: 'Dishes & Recipes', icon: BookOpen },
@@ -35,7 +55,7 @@ const Sidebar = () => {
             <Utensils className="w-6 h-6 animate-pulse" />
           </div>
           <div>
-            <h1 className="font-bold text-lg text-white leading-none">BiteFlow</h1>
+            <h1 className="font-bold text-lg text-slate-100 leading-none">BiteFlow</h1>
             <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Canteen POS</span>
           </div>
         </div>
@@ -49,15 +69,22 @@ const Sidebar = () => {
                 key={link.to}
                 to={link.to}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group text-sm font-medium ${
+                  `flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group text-sm font-medium ${
                     isActive
                       ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/15'
                       : 'text-slate-400 hover:bg-slate-900/60 hover:text-slate-200'
                   }`
                 }
               >
-                <Icon className="w-5 h-5 transition-transform duration-200 group-hover:scale-105" />
-                <span>{link.name}</span>
+                <div className="flex items-center gap-3 flex-1">
+                  <Icon className="w-5 h-5 transition-transform duration-200 group-hover:scale-105" />
+                  <span>{link.name}</span>
+                </div>
+                {link.isOnline && pendingCount > 0 && (
+                  <span className="flex h-5 min-w-[20px] px-1 items-center justify-center rounded-full bg-red-500 text-[10px] font-extrabold text-white animate-pulse shrink-0">
+                    {pendingCount}
+                  </span>
+                )}
               </NavLink>
             );
           })}
@@ -67,11 +94,11 @@ const Sidebar = () => {
       {/* Admin Profile & Logout */}
       <div className="p-4 border-t border-slate-800/80 space-y-3">
         <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-900/50 border border-slate-800/50">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center font-bold text-white text-sm shadow">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center font-bold text-white text-sm shadow animate-pulse">
             {user?.username?.slice(0, 2).toUpperCase() || 'AD'}
           </div>
           <div>
-            <p className="text-sm font-semibold text-white truncate max-w-[130px]">{user?.username || 'Admin'}</p>
+            <p className="text-sm font-semibold text-slate-100 truncate max-w-[130px]">{user?.username || 'Admin'}</p>
             <div className="flex items-center gap-1 text-[10px] text-brand-400 font-medium">
               <Sparkles className="w-3 h-3" />
               <span>Administrator</span>
@@ -81,7 +108,7 @@ const Sidebar = () => {
 
         <button
           onClick={logout}
-          className="flex w-full items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors duration-200"
+          className="flex w-full items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors duration-200 cursor-pointer"
         >
           <LogOut className="w-5 h-5" />
           <span>Sign Out</span>

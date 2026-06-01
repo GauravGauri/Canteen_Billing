@@ -34,7 +34,7 @@ const CartSection = () => {
         <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
           <div className="flex items-center gap-2.5">
             <ShoppingCart className="w-5 h-5 text-brand-400" />
-            <h3 className="font-bold text-white text-base">Current Cart</h3>
+            <h3 className="font-bold text-slate-100 text-base">Current Cart</h3>
           </div>
           <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 capitalize">
             {orderType === 'dine-in' ? `${selectedTable?.tableNo || 'Table'}` : orderType}
@@ -110,7 +110,7 @@ const CartSection = () => {
           {cart.map((item) => (
             <div key={item.dishId} className="flex items-center justify-between bg-slate-900/50 border border-slate-800/60 p-3 rounded-xl">
               <div className="max-w-[55%]">
-                <h5 className="font-semibold text-xs text-white truncate">{item.name}</h5>
+                <h5 className="font-semibold text-xs text-slate-100 truncate">{item.name}</h5>
                 <span className="text-[10px] text-slate-500">₹{item.price} each</span>
               </div>
 
@@ -122,7 +122,7 @@ const CartSection = () => {
                   >
                     <Minus className="w-3.5 h-3.5" />
                   </button>
-                  <span className="text-xs font-bold px-2 text-white">{item.quantity}</span>
+                  <span className="text-xs font-bold px-2 text-slate-100">{item.quantity}</span>
                   <button
                     onClick={() => adjustQty(item.dishId, 'increase')}
                     className="p-1 rounded text-slate-400 hover:text-slate-200"
@@ -180,7 +180,7 @@ const CartSection = () => {
               <span>-₹{discount}</span>
             </div>
           )}
-          <div className="flex justify-between text-white font-bold text-sm border-t border-slate-800 pt-2.5">
+          <div className="flex justify-between text-slate-100 font-bold text-sm border-t border-slate-800 pt-2.5">
             <span>Total Amount</span>
             <span className="text-brand-400 text-base">₹{netTotal.toFixed(2)}</span>
           </div>

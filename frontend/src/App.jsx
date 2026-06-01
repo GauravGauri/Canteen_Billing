@@ -8,6 +8,7 @@ import Sidebar from './components/Sidebar';
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const POS = lazy(() => import('./pages/POS'));
+const OnlineOrders = lazy(() => import('./pages/OnlineOrders'));
 const BillingHistory = lazy(() => import('./pages/BillingHistory'));
 const Inventory = lazy(() => import('./pages/Inventory'));
 const DishCreator = lazy(() => import('./pages/DishCreator'));
@@ -48,6 +49,7 @@ const App = () => {
               <Route element={<ProtectedLayout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/pos" element={<POS />} />
+                <Route path="/online-orders" element={<OnlineOrders />} />
                 <Route path="/billing-history" element={<BillingHistory />} />
                 <Route path="/inventory" element={<Inventory />} />
                 <Route path="/dish-creator" element={<DishCreator />} />

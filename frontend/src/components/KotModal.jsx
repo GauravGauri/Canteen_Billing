@@ -15,7 +15,7 @@ const KotModal = ({ isOpen, onClose, order }) => {
         {/* Header */}
         <div className="p-5 border-b border-slate-800 flex justify-between items-center bg-slate-950 rounded-t-2xl">
           <div>
-            <h3 className="font-bold text-lg text-white">Kitchen Order Ticket</h3>
+            <h3 className="font-bold text-lg text-slate-100">Kitchen Order Ticket</h3>
             <p className="text-xs text-slate-400">Preview and print KOT slip</p>
           </div>
           <button

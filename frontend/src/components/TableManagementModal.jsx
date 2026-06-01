@@ -110,7 +110,7 @@ const TableManagementModal = ({ isOpen, onClose, onRefresh }) => {
               <Layers className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-lg text-white">Adjust Dining Tables</h3>
+              <h3 className="font-bold text-lg text-slate-100">Adjust Dining Tables</h3>
               <p className="text-xs text-slate-400">Add, delete, or adjust capacity of tables</p>
             </div>
           </div>
@@ -163,7 +163,7 @@ const TableManagementModal = ({ isOpen, onClose, onRefresh }) => {
                   >
                     <Minus className="w-3.5 h-3.5" />
                   </button>
-                  <span className="flex-1 text-center text-xs font-bold text-white">{newCapacity}</span>
+                  <span className="flex-1 text-center text-xs font-bold text-slate-100">{newCapacity}</span>
                   <button
                     type="button"
                     onClick={() => setNewCapacity(newCapacity + 1)}
@@ -197,7 +197,7 @@ const TableManagementModal = ({ isOpen, onClose, onRefresh }) => {
                 return (
                   <div key={table._id} className="flex items-center justify-between p-4 hover:bg-slate-900/30 transition-colors">
                     <div>
-                      <h5 className="font-bold text-sm text-white">{table.tableNo}</h5>
+                      <h5 className="font-bold text-sm text-slate-100">{table.tableNo}</h5>
                       <span className={`text-[10px] font-semibold uppercase tracking-wider ${
                         isOccupied ? 'text-red-400' : 'text-slate-500'
                       }`}>
@@ -216,7 +216,7 @@ const TableManagementModal = ({ isOpen, onClose, onRefresh }) => {
                           >
                             <Minus className="w-3.5 h-3.5" />
                           </button>
-                          <span className="text-xs font-bold px-2.5 text-white w-6 text-center">{table.capacity}</span>
+                          <span className="text-xs font-bold px-2.5 text-slate-100 w-6 text-center">{table.capacity}</span>
                           <button
                             onClick={() => handleAdjustCapacity(table, 'increase')}
                             className="p-1 rounded text-slate-400 hover:text-slate-200"

@@ -246,7 +246,7 @@ const DishCreator = () => {
                   )}
                 </div>
 
-                <h4 className="font-bold text-white text-base leading-tight mb-1">{dish.name}</h4>
+                <h4 className="font-bold text-slate-100 text-base leading-tight mb-1">{dish.name}</h4>
                 <h5 className="font-bold text-brand-400 text-base mb-3">₹{dish.price}</h5>
                 
                 {dish.description && (
@@ -309,7 +309,7 @@ const DishCreator = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4">
           <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center pb-4 border-b border-slate-800 mb-4">
-              <h3 className="font-bold text-white text-base">
+              <h3 className="font-bold text-slate-100 text-base">
                 {isEditing ? 'Edit Dish & Recipe Details' : 'Create Dish & Link Recipe'}
               </h3>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-200">
@@ -387,7 +387,7 @@ const DishCreator = () => {
 
               {/* Recipe Builder Component */}
               <div className="border-t border-slate-800/80 pt-4 space-y-4">
-                <h4 className="font-bold text-white text-sm">Recipe Ingredients Editor</h4>
+                <h4 className="font-bold text-slate-100 text-sm">Recipe Ingredients Editor</h4>
                 
                 <div className="flex flex-col sm:flex-row gap-3 items-end">
                   {/* Select Product */}
@@ -446,7 +446,7 @@ const DishCreator = () => {
                     <tbody className="divide-y divide-slate-850 text-slate-300">
                       {recipeItems.map((item, index) => (
                         <tr key={item.productId || index}>
-                          <td className="px-4 py-2.5 font-semibold text-white">{item.name}</td>
+                          <td className="px-4 py-2.5 font-semibold text-slate-100">{item.name}</td>
                           <td className="px-4 py-2.5 text-center font-bold text-brand-400">{item.quantity}</td>
                           <td className="px-4 py-2.5 text-center text-slate-400 uppercase">{item.unit}</td>
                           <td className="px-4 py-2.5 text-right">

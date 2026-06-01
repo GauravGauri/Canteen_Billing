@@ -132,7 +132,7 @@ const Inventory = () => {
           <div className="glass-card rounded-2xl p-6 flex items-center justify-between border-l-4 border-brand-500">
             <div>
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Raw Items</span>
-              <h3 className="text-3xl font-extrabold text-white mt-1.5">{products.length}</h3>
+              <h3 className="text-3xl font-extrabold text-slate-100 mt-1.5">{products.length}</h3>
             </div>
             <div className="p-3 bg-brand-600/10 text-brand-400 rounded-xl">
               <Package className="w-6 h-6" />
@@ -213,7 +213,7 @@ const Inventory = () => {
                   const isLowStock = product.stockQuantity <= product.minStockLevel;
                   return (
                     <tr key={product._id} className="hover:bg-slate-900/40 transition-colors">
-                      <td className="px-6 py-4 font-bold text-white">{product.name}</td>
+                      <td className="px-6 py-4 font-bold text-slate-100">{product.name}</td>
                       <td className={`px-6 py-4 font-extrabold ${isLowStock ? 'text-red-400' : 'text-slate-200'}`}>
                         {product.stockQuantity}
                       </td>
@@ -274,7 +274,7 @@ const Inventory = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4">
           <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6">
             <div className="flex justify-between items-center pb-4 border-b border-slate-800">
-              <h3 className="font-bold text-white text-base">
+              <h3 className="font-bold text-slate-100 text-base">
                 {isEditing ? 'Edit Product Details' : 'Add New Raw Product'}
               </h3>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-200">

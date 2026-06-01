@@ -242,7 +242,7 @@ const PurchaseOrders = () => {
         {/* Create PO Trigger */}
         <div className="glass-card rounded-2xl p-6 flex items-center justify-between">
           <div>
-            <h3 className="font-bold text-white text-base">Purchase Management</h3>
+            <h3 className="font-bold text-slate-100 text-base">Purchase Management</h3>
             <p className="text-xs text-slate-400 mt-1">Reorder raw materials and track supplier deliveries.</p>
           </div>
 
@@ -273,7 +273,7 @@ const PurchaseOrders = () => {
               <tbody className="divide-y divide-slate-800/50 text-sm text-slate-300">
                 {pos.map((po) => (
                   <tr key={po._id} className="hover:bg-slate-900/40 transition-colors">
-                    <td className="px-6 py-4 font-bold text-white">{po.poNumber}</td>
+                    <td className="px-6 py-4 font-bold text-slate-100">{po.poNumber}</td>
                     <td className="px-6 py-4 font-semibold text-slate-200">{po.supplierId?.name || 'Deleted Supplier'}</td>
                     <td className="px-6 py-4 text-slate-400">{new Date(po.orderDate).toLocaleDateString()}</td>
                     <td className="px-6 py-4 font-bold text-brand-400">₹{po.totalAmount.toFixed(2)}</td>
@@ -331,7 +331,7 @@ const PurchaseOrders = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4">
           <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center pb-4 border-b border-slate-800 mb-4">
-              <h3 className="font-bold text-white text-base">New Purchase Order</h3>
+              <h3 className="font-bold text-slate-100 text-base">New Purchase Order</h3>
               <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-slate-200">
                 <X className="w-5 h-5" />
               </button>
@@ -356,7 +356,7 @@ const PurchaseOrders = () => {
 
               {/* Product Reorder Tool */}
               <div className="border-t border-slate-800/80 pt-4 space-y-4">
-                <h4 className="font-bold text-white text-sm">Add Items to Order</h4>
+                <h4 className="font-bold text-slate-100 text-sm">Add Items to Order</h4>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                   {/* Select Product */}
@@ -428,7 +428,7 @@ const PurchaseOrders = () => {
                     <tbody className="divide-y divide-slate-850 text-slate-300">
                       {orderItems.map((item) => (
                         <tr key={item.productId}>
-                          <td className="px-4 py-2.5 font-semibold text-white">{item.name}</td>
+                          <td className="px-4 py-2.5 font-semibold text-slate-100">{item.name}</td>
                           <td className="px-4 py-2.5 text-center font-bold text-slate-200">
                             {item.quantityOrdered} <span className="text-[10px] text-slate-500 uppercase">{item.unit}</span>
                           </td>
@@ -460,7 +460,7 @@ const PurchaseOrders = () => {
                 </div>
 
                 {orderItems.length > 0 && (
-                  <div className="flex justify-end text-sm font-bold text-white border-t border-slate-800 pt-3">
+                  <div className="flex justify-end text-sm font-bold text-slate-100 border-t border-slate-800 pt-3">
                     <span>Est. PO Total: <span className="text-brand-400 font-extrabold text-base ml-1">
                       ₹{orderItems.reduce((s, i) => s + i.costPrice * i.quantityOrdered, 0).toFixed(2)}
                     </span></span>
@@ -495,7 +495,7 @@ const PurchaseOrders = () => {
           <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6">
             <div className="flex justify-between items-center pb-4 border-b border-slate-800 mb-4">
               <div>
-                <h3 className="font-bold text-white text-base">Receive Products</h3>
+                <h3 className="font-bold text-slate-100 text-base">Receive Products</h3>
                 <p className="text-xs text-slate-400 mt-0.5">PO: {selectedPO.poNumber} | Supplier: {selectedPO.supplierId?.name}</p>
               </div>
               <button onClick={() => setIsReceiveOpen(false)} className="text-slate-400 hover:text-slate-200">
@@ -519,7 +519,7 @@ const PurchaseOrders = () => {
                       const remaining = item.quantityOrdered - item.quantityReceived;
                       return (
                         <tr key={item.productId._id}>
-                          <td className="px-4 py-3 font-semibold text-white">{item.productId.name}</td>
+                          <td className="px-4 py-3 font-semibold text-slate-100">{item.productId.name}</td>
                           <td className="px-4 py-3 text-center font-bold text-slate-200">
                             {item.quantityOrdered} <span className="text-[10px] text-slate-500 uppercase">{item.productId.unit}</span>
                           </td>
@@ -540,7 +540,7 @@ const PurchaseOrders = () => {
                                     [item.productId._id]: Math.min(remaining, Math.max(0, Number(e.target.value))),
                                   })
                                 }
-                                className="w-20 px-2 py-1 bg-slate-950 border border-slate-800 rounded text-right text-xs focus:ring-1 focus:ring-brand-500 focus:outline-none text-white font-bold"
+                                className="w-20 px-2 py-1 bg-slate-950 border border-slate-800 rounded text-right text-xs focus:ring-1 focus:ring-brand-500 focus:outline-none text-slate-100 font-bold"
                               />
                             ) : (
                               <span className="text-xs text-emerald-500 font-semibold uppercase mr-2">Fully Received</span>

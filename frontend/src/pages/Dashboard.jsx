@@ -93,7 +93,7 @@ const Dashboard = () => {
           <div className="glass-card rounded-2xl p-6 border-l-4 border-brand-500 flex justify-between items-center">
             <div>
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Cumulative Sales</span>
-              <h3 className="text-2xl font-black text-white mt-1">₹{stats.totalRevenue?.toFixed(2)}</h3>
+              <h3 className="text-2xl font-black text-slate-100 mt-1">₹{stats.totalRevenue?.toFixed(2)}</h3>
               <span className="text-[10px] text-brand-400 font-medium block mt-1.5">All Settle Invoices</span>
             </div>
             <div className="p-3.5 bg-brand-500/10 text-brand-400 rounded-xl">
@@ -105,7 +105,7 @@ const Dashboard = () => {
           <div className="glass-card rounded-2xl p-6 border-l-4 border-emerald-500 flex justify-between items-center">
             <div>
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">This Month Revenue</span>
-              <h3 className="text-2xl font-black text-white mt-1">₹{stats.revenueThisMonth?.toFixed(2)}</h3>
+              <h3 className="text-2xl font-black text-slate-100 mt-1">₹{stats.revenueThisMonth?.toFixed(2)}</h3>
               <span className="text-[10px] text-emerald-400 font-medium block mt-1.5">Current Month Period</span>
             </div>
             <div className="p-3.5 bg-emerald-500/10 text-emerald-400 rounded-xl">
@@ -117,7 +117,7 @@ const Dashboard = () => {
           <div className="glass-card rounded-2xl p-6 border-l-4 border-amber-500 flex justify-between items-center">
             <div>
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Active Orders (KOT)</span>
-              <h3 className="text-2xl font-black text-white mt-1">{stats.activeOrdersCount}</h3>
+              <h3 className="text-2xl font-black text-slate-100 mt-1">{stats.activeOrdersCount}</h3>
               <span className="text-[10px] text-amber-400 font-medium block mt-1.5">{stats.pendingBillsCount} Unpaid Bills Running</span>
             </div>
             <div className="p-3.5 bg-amber-500/10 text-amber-400 rounded-xl">
@@ -129,7 +129,7 @@ const Dashboard = () => {
           <div className="glass-card rounded-2xl p-6 border-l-4 border-indigo-500 flex justify-between items-center">
             <div>
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Dining Tables Occupied</span>
-              <h3 className="text-2xl font-black text-white mt-1">{stats.occupiedTablesCount} / {tables.length}</h3>
+              <h3 className="text-2xl font-black text-slate-100 mt-1">{stats.occupiedTablesCount} / {tables.length}</h3>
               <span className="text-[10px] text-indigo-400 font-medium block mt-1.5">{tables.length - stats.occupiedTablesCount} Available Tables</span>
             </div>
             <div className="p-3.5 bg-indigo-500/10 text-indigo-400 rounded-xl">
@@ -145,7 +145,7 @@ const Dashboard = () => {
           <div className="lg:col-span-8 glass-card rounded-2xl p-6">
             <div className="flex items-center gap-2 mb-6">
               <TrendingUp className="w-5 h-5 text-brand-400" />
-              <h4 className="font-bold text-white text-base">7-Day Revenue Trend (₹)</h4>
+              <h4 className="font-bold text-slate-100 text-base">7-Day Revenue Trend (₹)</h4>
             </div>
 
             <div className="h-[340px]">
@@ -178,7 +178,7 @@ const Dashboard = () => {
           <div className="lg:col-span-4 glass-card rounded-2xl p-6 flex flex-col justify-between">
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="w-5 h-5 text-brand-400" />
-              <h4 className="font-bold text-white text-base">Sales by Category</h4>
+              <h4 className="font-bold text-slate-100 text-base">Sales by Category</h4>
             </div>
 
             <div className="h-[260px] flex justify-center items-center relative">
@@ -209,7 +209,7 @@ const Dashboard = () => {
               
               <div className="absolute flex flex-col items-center justify-center">
                 <span className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">Total sold</span>
-                <span className="text-2xl font-black text-white">
+                <span className="text-2xl font-black text-slate-100">
                   {stats.categorySales.reduce((a, b) => a + b.value, 0)}
                 </span>
               </div>
@@ -240,7 +240,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
-                <h4 className="font-bold text-white text-base">Low Stock Alerts</h4>
+                <h4 className="font-bold text-slate-100 text-base">Low Stock Alerts</h4>
               </div>
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/10">
                 {lowStockProducts.length} Items Low
@@ -253,7 +253,7 @@ const Dashboard = () => {
                   <div className="flex items-center gap-3">
                     <Package className="w-4 h-4 text-slate-500 shrink-0" />
                     <div>
-                      <h5 className="font-semibold text-sm text-white">{p.name}</h5>
+                      <h5 className="font-semibold text-sm text-slate-100">{p.name}</h5>
                       <span className="text-[10px] text-slate-500">Min. stock limit: {p.minStockLevel} {p.unit}</span>
                     </div>
                   </div>
@@ -277,7 +277,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Utensils className="w-5 h-5 text-brand-400" />
-                <h4 className="font-bold text-white text-base">Occupied Tables Overview</h4>
+                <h4 className="font-bold text-slate-100 text-base">Occupied Tables Overview</h4>
               </div>
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/10">
                 {activeTablesCount} Active

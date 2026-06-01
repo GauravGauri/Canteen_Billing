@@ -165,7 +165,7 @@ const Suppliers = () => {
                     <Users className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-white text-base leading-none">{supplier.name}</h4>
+                    <h4 className="font-bold text-slate-100 text-base leading-none">{supplier.name}</h4>
                     {supplier.contactPerson && (
                       <span className="text-xs text-slate-400 mt-1 block">Contact: {supplier.contactPerson}</span>
                     )}
@@ -231,7 +231,7 @@ const Suppliers = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4">
           <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6">
             <div className="flex justify-between items-center pb-4 border-b border-slate-800">
-              <h3 className="font-bold text-white text-base">
+              <h3 className="font-bold text-slate-100 text-base">
                 {isEditing ? 'Edit Supplier Registry' : 'Register New Vendor / Supplier'}
               </h3>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-200">

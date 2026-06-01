@@ -133,8 +133,10 @@ const createOrder = async (req, res) => {
       paymentDetails,
     });
 
-    // Deduct stock immediately since order is sent to kitchen
-    await deductStock(items);
+    // Deduct stock if order is not pending
+    if (order.status !== 'pending') {
+      await deductStock(items);
+    }
 
     // If dine-in, update table status
     if (type === 'dine-in' && tableId) {
@@ -171,11 +173,15 @@ const updateOrder = async (req, res) => {
     // Check if items changed (e.g. items added to running order)
     if (items && JSON.stringify(order.items) !== JSON.stringify(items)) {
       // Revert old stock deduction
-      await restoreStock(order.items);
+      if (oldStatus !== 'pending') {
+        await restoreStock(order.items);
+      }
       // Save new items
       order.items = items;
       // Deduct new stock
-      await deductStock(items);
+      if (status !== 'pending') {
+        await deductStock(items);
+      }
 
       order.subTotal = subTotal !== undefined ? subTotal : order.subTotal;
       order.tax = tax !== undefined ? tax : order.tax;
@@ -185,6 +191,20 @@ const updateOrder = async (req, res) => {
 
     // Apply status transitions
     if (status) {
+      if (oldStatus === 'pending' && status === 'kitchen') {
+        await deductStock(order.items);
+      }
+
+      // Handle stock changes for cancellation
+      if (status === 'cancelled' && oldStatus !== 'cancelled') {
+        if (oldStatus !== 'pending') {
+          await restoreStock(order.items);
+        }
+      } else if (oldStatus === 'cancelled' && status && status !== 'cancelled') {
+        if (status !== 'pending') {
+          await deductStock(order.items);
+        }
+      }
       order.status = status;
     }
 
@@ -194,14 +214,6 @@ const updateOrder = async (req, res) => {
 
     if (paymentDetails !== undefined) {
       order.paymentDetails = paymentDetails;
-    }
-
-    // Handle stock changes for cancellation
-    if (status === 'cancelled' && oldStatus !== 'cancelled') {
-      await restoreStock(order.items);
-    } else if (oldStatus === 'cancelled' && status && status !== 'cancelled') {
-      // If uncancelled (rare), deduct stock again
-      await deductStock(order.items);
     }
 
     await order.save();
@@ -291,12 +303,12 @@ const getDashboardStats = async (req, res) => {
     ]);
     const totalRevenue = paidStats[0]?.totalRevenue || 0;
 
-    // 2. Active orders count (kitchen or served) - using optimized countDocuments
-    const activeOrdersCount = await Order.countDocuments({ status: { $in: ['kitchen', 'served'] } });
+    // 2. Active orders count (pending, kitchen, ready, or served) - using optimized countDocuments
+    const activeOrdersCount = await Order.countDocuments({ status: { $in: ['pending', 'kitchen', 'ready', 'served'] } });
 
-    // 3. Pending bills count (unpaid kitchen/served orders)
+    // 3. Pending bills count (unpaid pending/kitchen/ready/served orders)
     const pendingBillsCount = await Order.countDocuments({
-      status: { $in: ['kitchen', 'served'] },
+      status: { $in: ['pending', 'kitchen', 'ready', 'served'] },
       paymentMethod: 'unpaid',
     });
 

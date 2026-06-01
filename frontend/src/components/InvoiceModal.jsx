@@ -15,7 +15,7 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
         {/* Header */}
         <div className="p-5 border-b border-slate-800 flex justify-between items-center bg-slate-950 rounded-t-2xl">
           <div>
-            <h3 className="font-bold text-lg text-white">Bill Invoice</h3>
+            <h3 className="font-bold text-lg text-slate-100">Bill Invoice</h3>
             <p className="text-xs text-slate-400">Preview and print transaction invoice</p>
           </div>
           <button
