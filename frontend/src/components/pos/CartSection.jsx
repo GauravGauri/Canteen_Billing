@@ -22,6 +22,7 @@ const CartSection = () => {
   const cancelOrder = usePosStore((state) => state.cancelOrder);
   const sendToKitchen = usePosStore((state) => state.sendToKitchen);
   const setIsSettleModalOpen = usePosStore((state) => state.setIsSettleModalOpen);
+  const quickBill = usePosStore((state) => state.quickBill);
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const tax = Number(((subtotal * taxRate) / 100).toFixed(2));
@@ -213,6 +214,28 @@ const CartSection = () => {
             <Receipt className="w-4 h-4" />
             <span>Settle & Print Bill</span>
           </button>
+
+          <div className="col-span-2 border-t border-slate-800/80 pt-3 flex flex-col gap-2">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block text-center">Quick Bill (Instant Settle)</span>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => quickBill('cash')}
+                disabled={cart.length === 0 || loading}
+                className="py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800/20 disabled:text-emerald-500/50 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 shadow-lg shadow-emerald-950/20"
+              >
+                <span>⚡ Cash</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => quickBill('upi')}
+                disabled={cart.length === 0 || loading}
+                className="py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800/20 disabled:text-blue-500/50 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 shadow-lg shadow-blue-950/20"
+              >
+                <span>⚡ UPI</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

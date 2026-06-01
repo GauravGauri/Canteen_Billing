@@ -4,6 +4,8 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 const User = require('./models/User');
 const Table = require('./models/Table');
+const Order = require('./models/Order');
+const Dish = require('./models/Dish');
 
 const compression = require('compression');
 
@@ -64,6 +66,31 @@ const seedData = async () => {
       ];
       await Table.insertMany(defaultTables);
       console.log('Successfully Seeded Default Dining Tables (Table 1 - Table 6)');
+    }
+
+    // 3. Migrate existing orders to include category in items
+    const ordersToMigrate = await Order.find({ 'items.category': { $exists: false } });
+    if (ordersToMigrate.length > 0) {
+      console.log(`Migrating ${ordersToMigrate.length} orders to include categories in items...`);
+      const dishes = await Dish.find({}).lean();
+      const dishMap = {};
+      dishes.forEach((d) => {
+        dishMap[d._id.toString()] = d.category || 'Other';
+      });
+
+      for (const order of ordersToMigrate) {
+        let updated = false;
+        for (const item of order.items) {
+          if (!item.category) {
+            item.category = dishMap[item.dishId.toString()] || 'Other';
+            updated = true;
+          }
+        }
+        if (updated) {
+          await order.save();
+        }
+      }
+      console.log('Order migration complete.');
     }
   } catch (err) {
     console.error('Seeding error: ', err.message);
