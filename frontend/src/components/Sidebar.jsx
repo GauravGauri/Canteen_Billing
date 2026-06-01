@@ -12,33 +12,15 @@ import {
   LogOut,
   Sparkles,
   LayoutDashboard,
-  Globe,
 } from 'lucide-react';
 
 const Sidebar = () => {
   const { logout, user } = useAuth();
-  const [pendingCount, setPendingCount] = useState(0);
-
-  useEffect(() => {
-    const fetchPendingCount = async () => {
-      try {
-        const response = await axios.get('/orders', { params: { status: 'pending' } });
-        if (response.data.success) {
-          setPendingCount(response.data.data.length);
-        }
-      } catch (err) {
-        console.error("Error fetching pending orders count", err);
-      }
-    };
-    fetchPendingCount();
-    const interval = setInterval(fetchPendingCount, 5000);
-    return () => clearInterval(interval);
-  }, []);
 
   const links = [
     { to: '/dashboard', name: 'Dashboard', icon: LayoutDashboard },
     { to: '/pos', name: 'POS Terminal', icon: Utensils },
-    { to: '/online-orders', name: 'Online Orders', icon: Globe, isOnline: true },
+    { to: '/quick-bill', name: 'Quick Bill', icon: Sparkles },
     { to: '/billing-history', name: 'Billing History', icon: History },
     { to: '/inventory', name: 'Inventory', icon: Boxes },
     { to: '/dish-creator', name: 'Dishes & Recipes', icon: BookOpen },
@@ -80,11 +62,6 @@ const Sidebar = () => {
                   <Icon className="w-5 h-5 transition-transform duration-200 group-hover:scale-105" />
                   <span>{link.name}</span>
                 </div>
-                {link.isOnline && pendingCount > 0 && (
-                  <span className="flex h-5 min-w-[20px] px-1 items-center justify-center rounded-full bg-red-500 text-[10px] font-extrabold text-white animate-pulse shrink-0">
-                    {pendingCount}
-                  </span>
-                )}
               </NavLink>
             );
           })}
