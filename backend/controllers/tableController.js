@@ -15,7 +15,7 @@ const getTables = async (req, res) => {
 // @desc    Create a table
 // @route   POST /api/tables
 // @access  Private (Admin)
-const createTable = async (req, res) => {
+const createTable = async (req, res) => {//checking gaurav
   const { tableNo, capacity } = req.body;
 
   try {
