@@ -41,23 +41,19 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      // Fetch stats
-      const statsRes = await axios.get('/orders/stats');
+      // Fetch stats and tables in parallel
+      const [statsRes, tablesRes] = await Promise.all([
+        axios.get('/orders/stats'),
+        axios.get('/tables')
+      ]);
+
       if (statsRes.data.success) {
         setStats(statsRes.data.data);
+        if (statsRes.data.data.lowStockProducts) {
+          setLowStockProducts(statsRes.data.data.lowStockProducts);
+        }
       }
 
-      // Fetch products to identify low stock
-      const productsRes = await axios.get('/products');
-      if (productsRes.data.success) {
-        const low = productsRes.data.data.filter(
-          (p) => p.stockQuantity <= p.minStockLevel
-        );
-        setLowStockProducts(low);
-      }
-
-      // Fetch tables
-      const tablesRes = await axios.get('/tables');
       if (tablesRes.data.success) {
         setTables(tablesRes.data.data);
       }
