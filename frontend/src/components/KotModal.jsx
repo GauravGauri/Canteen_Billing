@@ -31,7 +31,7 @@ const KotModal = ({ isOpen, onClose, order }) => {
           <div className="bg-white text-black p-4 rounded-lg shadow-inner font-mono text-sm max-w-[280px] mx-auto leading-relaxed border border-slate-300">
             <div className="text-center border-b border-dashed border-black pb-2 mb-3">
               <h4 className="font-bold text-base uppercase">KITCHEN SLIP</h4>
-              <p className="text-xs">BiteFlow Canteen</p>
+              <p className="text-xs">KK Food Canteen</p>
             </div>
 
             <div className="space-y-1 text-xs mb-3">
@@ -86,7 +86,7 @@ const KotModal = ({ isOpen, onClose, order }) => {
       <div className="print-area font-mono text-black bg-white">
         <div style={{ textAlign: 'center', borderBottom: '1px dashed black', paddingBottom: '5px', marginBottom: '10px' }}>
           <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>KITCHEN SLIP</h3>
-          <p style={{ margin: 0, fontSize: '12px' }}>BiteFlow Canteen</p>
+          <p style={{ margin: 0, fontSize: '12px' }}>KK Food Canteen</p>
         </div>
         <div style={{ fontSize: '11px', marginBottom: '10px', lineHeight: '1.4' }}>
           <div><strong>Bill No:</strong> {order?.billNo}</div>

@@ -37,7 +37,7 @@ const Sidebar = () => {
             <Utensils className="w-6 h-6 animate-pulse" />
           </div>
           <div>
-            <h1 className="font-bold text-lg text-slate-100 leading-none">BiteFlow</h1>
+            <h1 className="font-bold text-lg text-slate-100 leading-none">KK Food</h1>
             <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Canteen POS</span>
           </div>
         </div>
@@ -51,10 +51,9 @@ const Sidebar = () => {
                 key={link.to}
                 to={link.to}
                 className={({ isActive }) =>
-                  `flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group text-sm font-medium ${
-                    isActive
-                      ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/15'
-                      : 'text-slate-400 hover:bg-slate-900/60 hover:text-slate-200'
+                  `flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group text-sm font-medium ${isActive
+                    ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/15'
+                    : 'text-slate-400 hover:bg-slate-900/60 hover:text-slate-200'
                   }`
                 }
               >

@@ -30,7 +30,7 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
         <div className="p-6 overflow-y-auto flex-1 bg-slate-950/40">
           <div className="bg-white text-black p-5 rounded-lg shadow-inner font-mono text-xs max-w-[290px] mx-auto leading-relaxed border border-slate-300">
             <div className="text-center border-b border-dashed border-black pb-3 mb-3">
-              <h4 className="font-bold text-base uppercase tracking-wider">BITEFLOW CANTEEN</h4>
+              <h4 className="font-bold text-base uppercase tracking-wider">KK Food CANTEEN</h4>
               <p className="text-[10px]">123 Campus Plaza, Sector 4</p>
               <p className="text-[10px]">Phone: +91 98765 43210</p>
             </div>
@@ -122,7 +122,7 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
       {/* CSS Print-only rendering structure */}
       <div className="print-area font-mono text-black bg-white">
         <div style={{ textAlign: 'center', borderBottom: '1px dashed black', paddingBottom: '8px', marginBottom: '10px' }}>
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>BITEFLOW CANTEEN</h3>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>KK Food CANTEEN</h3>
           <p style={{ margin: 0, fontSize: '10px' }}>123 Campus Plaza, Sector 4</p>
           <p style={{ margin: 0, fontSize: '10px' }}>Phone: +91 98765 43210</p>
         </div>

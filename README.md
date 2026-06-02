@@ -1,10 +1,10 @@
-# 🍔 BiteFlow - Canteen POS & Billing Management System
+# 🍔 KK Food - Canteen POS & Billing Management System
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
 [![Stack](https://img.shields.io/badge/stack-MERN--Zustand-blue.svg)](#)
 [![Design](https://img.shields.io/badge/design-Slate%20Dark-indigo.svg)](#)
 
-BiteFlow is a state-of-the-art, high-performance Point of Sale (POS) and inventory management system designed specifically for canteens and restaurants. Featuring a highly responsive MERN architecture, BiteFlow is powered by **Zustand** for lightweight state management and optimized rendering performance.
+KK Food is a state-of-the-art, high-performance Point of Sale (POS) and inventory management system designed specifically for canteens and restaurants. Featuring a highly responsive MERN architecture, KK Food is powered by **Zustand** for lightweight state management and optimized rendering performance.
 
 ---
 

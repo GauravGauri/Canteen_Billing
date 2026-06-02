@@ -33,7 +33,7 @@ const Login = () => {
       const res = isSignUp
         ? await register(username, password)
         : await login(username, password);
-        
+
       if (res.success) {
         navigate('/pos');
       } else {
@@ -59,7 +59,7 @@ const Login = () => {
             <Utensils className="w-8 h-8" />
           </div>
           <h2 className="text-3xl font-extrabold text-white tracking-tight">
-            {isSignUp ? 'Create Account' : 'BiteFlow Terminal'}
+            {isSignUp ? 'Create Account' : 'KK Food Terminal'}
           </h2>
           <p className="text-sm text-slate-400 mt-1.5 text-center">
             {isSignUp ? 'Register to manage your canteen POS & inventory' : 'Sign in to manage billing & inventory'}
