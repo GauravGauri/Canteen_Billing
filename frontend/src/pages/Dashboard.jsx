@@ -68,7 +68,7 @@ const Dashboard = () => {
 
   if (loading || !stats) {
     return (
-      <div className="min-h-screen bg-slate-900 text-slate-100 pl-64 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-900 text-slate-100 pl-0 lg:pl-64 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-500 border-t-transparent"></div>
           <p className="text-sm font-semibold tracking-wide text-slate-400">Loading analytics dashboard...</p>
@@ -78,7 +78,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 pl-64 pb-12">
+    <div className="min-h-screen bg-slate-900 text-slate-100 pl-0 lg:pl-64 pb-12">
       <Navbar title="Management Analytics Dashboard" />
 
       <div className="p-8 max-w-[1600px] mx-auto space-y-8">

@@ -32,7 +32,7 @@ const POS = () => {
   }, [fetchTables, fetchDishes]);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 pl-64">
+    <div className="min-h-screen bg-slate-900 text-slate-100 pl-0 lg:pl-64">
       <Navbar title="Point of Sale (POS)" />
 
       {/* Main Container */}

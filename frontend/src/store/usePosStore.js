@@ -25,12 +25,15 @@ export const usePosStore = create((set, get) => ({
   message: { type: '', text: '' },
   paymentMethod: 'cash',
   paymentDetails: '',
+  isSidebarOpen: false,
 
   // Actions
   showMsg: (type, text) => {
     set({ message: { type, text } });
     setTimeout(() => set({ message: { type: '', text: '' } }), 4000);
   },
+  toggleSidebar: () => set({ isSidebarOpen: !get().isSidebarOpen }),
+  setSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
 
   fetchTables: async () => {
     try {

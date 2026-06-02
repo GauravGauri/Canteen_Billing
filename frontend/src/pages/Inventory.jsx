@@ -122,7 +122,7 @@ const Inventory = () => {
   const lowStockCount = products.filter((p) => p.stockQuantity <= p.minStockLevel).length;
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 pl-64">
+    <div className="min-h-screen bg-slate-900 text-slate-100 pl-0 lg:pl-64">
       <Navbar title="Inventory Management" />
 
       <div className="p-8 max-w-[1600px] mx-auto space-y-8">

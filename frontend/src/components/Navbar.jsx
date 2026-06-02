@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, User, Sun, Moon } from 'lucide-react';
+import { Calendar, User, Sun, Moon, Menu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { usePosStore } from '../store/usePosStore';
 
 const Navbar = ({ title }) => {
   const { user } = useAuth();
   const [theme, setTheme] = useState(localStorage.getItem('canteen_theme') || 'dark');
+  const toggleSidebar = usePosStore((state) => state.toggleSidebar);
 
   useEffect(() => {
     if (theme === 'light') {
@@ -27,10 +29,19 @@ const Navbar = ({ title }) => {
   });
 
   return (
-    <header className="no-print h-20 border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between px-8">
-      <div>
-        <h2 className="text-xl font-bold text-slate-100 tracking-tight">{title}</h2>
-        <p className="text-xs text-slate-400 mt-0.5">Welcome back to the terminal.</p>
+    <header className="no-print h-20 border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between px-4 sm:px-8">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={toggleSidebar}
+          className="p-2 rounded-xl border border-slate-800 hover:border-slate-700 bg-slate-800/40 text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center lg:hidden cursor-pointer"
+          title="Toggle Menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <div>
+          <h2 className="text-base sm:text-xl font-bold text-slate-100 tracking-tight">{title}</h2>
+          <p className="hidden xs:block text-[10px] sm:text-xs text-slate-400 mt-0.5">Welcome back to the terminal.</p>
+        </div>
       </div>
 
       <div className="flex items-center gap-6 text-sm text-slate-300">
