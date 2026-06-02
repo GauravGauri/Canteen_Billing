@@ -36,6 +36,7 @@ const QuickBill = () => {
   // States for custom non-inventory items
   const [customName, setCustomName] = useState('');
   const [customPrice, setCustomPrice] = useState('');
+  const [saveToDb, setSaveToDb] = useState(false);
 
   useEffect(() => {
     fetchDishes();
@@ -135,32 +136,63 @@ const QuickBill = () => {
     setCart(cart.filter((item) => item.dishId !== dishId));
   };
 
-  const addCustomItem = (name, price) => {
+  const addCustomItem = async (name, price, saveOption = false) => {
     if (!name || !price || isNaN(price) || Number(price) <= 0) {
       showMsg('error', 'Please enter a valid item name and price');
       return;
     }
     
     const itemPrice = Number(price);
-    // Use a deterministic key to merge same-name/same-price custom items
-    const customId = `custom_${name.trim().toLowerCase().replace(/\s+/g, '_')}_${itemPrice}`;
-    const existingIndex = cart.findIndex((item) => item.dishId === customId);
-    const newCart = [...cart];
+    const itemName = name.trim();
 
-    if (existingIndex > -1) {
-      newCart[existingIndex].quantity += 1;
-    } else {
-      newCart.push({
-        dishId: customId,
-        name: name.trim(),
-        price: itemPrice,
-        category: 'Quick Items',
-        quantity: 1,
-        isCustom: true,
-      });
+    // Check if a dish with this name already exists in our fetched dishes
+    const existingDish = dishes.find(d => d.name.toLowerCase() === itemName.toLowerCase());
+    if (existingDish) {
+      addToCart(existingDish);
+      showMsg('success', `Added existing menu item ${existingDish.name} to cart`);
+      return;
     }
-    setCart(newCart);
-    showMsg('success', `Added ${name} (₹${itemPrice}) to cart`);
+
+    if (saveOption) {
+      setLoading(true);
+      try {
+        const res = await axios.post('/dishes', {
+          name: itemName,
+          price: itemPrice,
+          category: 'Quick Items',
+        });
+        if (res.data.success) {
+          const newDish = res.data.data;
+          addToCart(newDish);
+          fetchDishes();
+          showMsg('success', `Created and added menu item: ${itemName}`);
+        }
+      } catch (err) {
+        showMsg('error', err.response?.data?.message || 'Failed to save new item to menu database');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // Use a deterministic key to merge same-name/same-price custom items
+      const customId = `custom_${itemName.toLowerCase().replace(/\s+/g, '_')}_${itemPrice}`;
+      const existingIndex = cart.findIndex((item) => item.dishId === customId);
+      const newCart = [...cart];
+
+      if (existingIndex > -1) {
+        newCart[existingIndex].quantity += 1;
+      } else {
+        newCart.push({
+          dishId: customId,
+          name: itemName,
+          price: itemPrice,
+          category: 'Quick Items',
+          quantity: 1,
+          isCustom: true,
+        });
+      }
+      setCart(newCart);
+      showMsg('success', `Added temporary item ${itemName} (₹${itemPrice}) to cart`);
+    }
   };
 
   // Totals calculations
@@ -298,7 +330,7 @@ const QuickBill = () => {
                 <button
                   key={preset.name}
                   type="button"
-                  onClick={() => addCustomItem(preset.name, preset.price)}
+                  onClick={() => addCustomItem(preset.name, preset.price, false)}
                   className="px-3.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800/80 hover:border-brand-500/50 hover:bg-slate-900 text-xs text-slate-300 font-semibold flex items-center gap-1.5 transition-all active:scale-95 group"
                 >
                   <span className="group-hover:scale-110 transition-transform">{preset.emoji}</span>
@@ -312,38 +344,59 @@ const QuickBill = () => {
             <form 
               onSubmit={(e) => {
                 e.preventDefault();
-                addCustomItem(customName, customPrice);
+                addCustomItem(customName, customPrice, saveToDb);
                 setCustomName('');
                 setCustomPrice('');
               }}
-              className="flex flex-col sm:flex-row gap-3 pt-1"
+              className="space-y-3 pt-1"
             >
-              <div className="flex-1">
-                <input
-                  type="text"
-                  value={customName}
-                  onChange={(e) => setCustomName(e.target.value)}
-                  placeholder="Custom Item Name (e.g. Soda, Biscuit)"
-                  className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-200"
-                />
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={customName}
+                    onChange={(e) => setCustomName(e.target.value)}
+                    placeholder="Custom Item Name (e.g. Soda, Biscuit)"
+                    className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-200"
+                  />
+                </div>
+                <div className="w-full sm:w-32">
+                  <input
+                    type="number"
+                    min="1"
+                    value={customPrice}
+                    onChange={(e) => setCustomPrice(e.target.value)}
+                    placeholder="Price (₹)"
+                    className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-200"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-1.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1 shadow-lg shadow-brand-950/20 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Item</span>
+                </button>
               </div>
-              <div className="w-full sm:w-32">
-                <input
-                  type="number"
-                  min="1"
-                  value={customPrice}
-                  onChange={(e) => setCustomPrice(e.target.value)}
-                  placeholder="Price (₹)"
-                  className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-200"
-                />
+
+              {/* DB Save Option */}
+              <div className="flex items-center gap-2 px-1">
+                <label className="relative flex items-center cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={saveToDb}
+                    onChange={(e) => setSaveToDb(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-3.5 h-3.5 bg-slate-950 border border-slate-800 rounded peer-checked:bg-brand-500 peer-checked:border-brand-500 transition-colors flex items-center justify-center">
+                    {saveToDb && <Plus className="w-2.5 h-2.5 text-white stroke-[3]" />}
+                  </div>
+                  <span className="ml-2 text-[10px] font-semibold text-slate-400 peer-hover:text-slate-200 hover:text-slate-200 transition-colors">
+                    Save permanently to menu (add to dishes database)
+                  </span>
+                </label>
               </div>
-              <button
-                type="submit"
-                className="px-4 py-1.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1 shadow-lg shadow-brand-950/20 active:scale-95 transition-all"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Item</span>
-              </button>
             </form>
           </div>
 
