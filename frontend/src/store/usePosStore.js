@@ -71,10 +71,11 @@ export const usePosStore = create((set, get) => ({
     set({
       currentOrder: order,
       cart: order.items.map(item => ({
-        dishId: item.dishId,
+        dishId: item.dishId || `custom_${item._id || Math.random().toString(36).substr(2, 9)}`,
         name: item.name,
         price: item.price,
         quantity: item.quantity,
+        isCustom: !item.dishId,
       })),
       discount: order.discount,
     });
@@ -193,7 +194,12 @@ export const usePosStore = create((set, get) => ({
       const orderPayload = {
         tableId: selectedTable ? selectedTable._id : null,
         type: orderType,
-        items: cart,
+        items: cart.map(item => ({
+          dishId: (item.isCustom || String(item.dishId).startsWith('custom_')) ? null : item.dishId,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+        })),
         subTotal: subtotal,
         tax,
         discount,
@@ -269,7 +275,12 @@ export const usePosStore = create((set, get) => ({
         const createPaidPayload = {
           tableId: selectedTable ? selectedTable._id : null,
           type: orderType,
-          items: cart,
+          items: cart.map(item => ({
+            dishId: (item.isCustom || String(item.dishId).startsWith('custom_')) ? null : item.dishId,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+          })),
           subTotal: subtotal,
           tax,
           discount,
@@ -331,7 +342,12 @@ export const usePosStore = create((set, get) => ({
         const createPaidPayload = {
           tableId: selectedTable ? selectedTable._id : null,
           type: orderType,
-          items: cart,
+          items: cart.map(item => ({
+            dishId: (item.isCustom || String(item.dishId).startsWith('custom_')) ? null : item.dishId,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+          })),
           subTotal: subtotal,
           tax,
           discount,

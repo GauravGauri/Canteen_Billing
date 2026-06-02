@@ -14,6 +14,7 @@ const generateBillNumber = async () => {
 // Helper function to deduct stock based on dishes ordered
 const deductStock = async (orderItems) => {
   for (const item of orderItems) {
+    if (!item.dishId) continue;
     const dish = await Dish.findById(item.dishId);
     if (dish && dish.recipe && dish.recipe.length > 0) {
       for (const ingredient of dish.recipe) {
@@ -31,6 +32,7 @@ const deductStock = async (orderItems) => {
 // Helper function to restore stock (e.g. if order is cancelled)
 const restoreStock = async (orderItems) => {
   for (const item of orderItems) {
+    if (!item.dishId) continue;
     const dish = await Dish.findById(item.dishId);
     if (dish && dish.recipe && dish.recipe.length > 0) {
       for (const ingredient of dish.recipe) {
@@ -111,6 +113,12 @@ const createOrder = async (req, res) => {
 
     // Verify all dishes exist and populate category
     for (const item of items) {
+      if (!item.dishId) {
+        if (!item.category) {
+          item.category = 'Quick Items';
+        }
+        continue;
+      }
       const dish = await Dish.findById(item.dishId);
       if (!dish) {
         return res.status(404).json({ success: false, message: `Dish not found: ${item.name}` });
@@ -176,9 +184,13 @@ const updateOrder = async (req, res) => {
       // Fetch dish categories for updated items
       for (const item of items) {
         if (!item.category) {
-          const dish = await Dish.findById(item.dishId);
-          if (dish) {
-            item.category = dish.category;
+          if (item.dishId) {
+            const dish = await Dish.findById(item.dishId);
+            if (dish) {
+              item.category = dish.category;
+            }
+          } else {
+            item.category = 'Quick Items';
           }
         }
       }

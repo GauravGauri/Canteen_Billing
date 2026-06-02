@@ -33,6 +33,10 @@ const QuickBill = () => {
   const [printedOrder, setPrintedOrder] = useState(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 
+  // States for custom non-inventory items
+  const [customName, setCustomName] = useState('');
+  const [customPrice, setCustomPrice] = useState('');
+
   useEffect(() => {
     fetchDishes();
   }, []);
@@ -131,6 +135,34 @@ const QuickBill = () => {
     setCart(cart.filter((item) => item.dishId !== dishId));
   };
 
+  const addCustomItem = (name, price) => {
+    if (!name || !price || isNaN(price) || Number(price) <= 0) {
+      showMsg('error', 'Please enter a valid item name and price');
+      return;
+    }
+    
+    const itemPrice = Number(price);
+    // Use a deterministic key to merge same-name/same-price custom items
+    const customId = `custom_${name.trim().toLowerCase().replace(/\s+/g, '_')}_${itemPrice}`;
+    const existingIndex = cart.findIndex((item) => item.dishId === customId);
+    const newCart = [...cart];
+
+    if (existingIndex > -1) {
+      newCart[existingIndex].quantity += 1;
+    } else {
+      newCart.push({
+        dishId: customId,
+        name: name.trim(),
+        price: itemPrice,
+        category: 'Quick Items',
+        quantity: 1,
+        isCustom: true,
+      });
+    }
+    setCart(newCart);
+    showMsg('success', `Added ${name} (₹${itemPrice}) to cart`);
+  };
+
   // Totals calculations
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const tax = Number(((subtotal * taxRate) / 100).toFixed(2));
@@ -144,7 +176,13 @@ const QuickBill = () => {
     try {
       const orderPayload = {
         type: 'takeaway',
-        items: cart,
+        items: cart.map(item => ({
+          dishId: (item.isCustom || String(item.dishId).startsWith('custom_')) ? null : item.dishId,
+          name: item.name,
+          category: item.category,
+          price: item.price,
+          quantity: item.quantity,
+        })),
         subTotal: subtotal,
         tax,
         discount,
@@ -235,6 +273,78 @@ const QuickBill = () => {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Quick Non-Inventory Items Section */}
+          <div className="glass-card p-5 rounded-2xl border border-slate-800/80 bg-slate-900/40 shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-brand-400" />
+                <h3 className="font-bold text-xs text-slate-200">Quick Non-Inventory Add</h3>
+              </div>
+              <span className="text-[10px] text-slate-500 font-medium">Add items not in menu</span>
+            </div>
+
+            {/* Presets Grid */}
+            <div className="flex flex-wrap gap-2">
+              {[
+                { name: 'Chips', price: 20, emoji: '🍿' },
+                { name: 'Cold Drink', price: 40, emoji: '🥤' },
+                { name: 'Tea', price: 15, emoji: '☕' },
+                { name: 'Coffee', price: 20, emoji: '☕' },
+                { name: 'Water Bottle', price: 20, emoji: '💧' },
+                { name: 'Samosa', price: 15, emoji: '🥟' },
+              ].map((preset) => (
+                <button
+                  key={preset.name}
+                  type="button"
+                  onClick={() => addCustomItem(preset.name, preset.price)}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800/80 hover:border-brand-500/50 hover:bg-slate-900 text-xs text-slate-300 font-semibold flex items-center gap-1.5 transition-all active:scale-95 group"
+                >
+                  <span className="group-hover:scale-110 transition-transform">{preset.emoji}</span>
+                  <span>{preset.name}</span>
+                  <span className="text-brand-400 font-bold">₹{preset.price}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Custom Input Form */}
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                addCustomItem(customName, customPrice);
+                setCustomName('');
+                setCustomPrice('');
+              }}
+              className="flex flex-col sm:flex-row gap-3 pt-1"
+            >
+              <div className="flex-1">
+                <input
+                  type="text"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  placeholder="Custom Item Name (e.g. Soda, Biscuit)"
+                  className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-200"
+                />
+              </div>
+              <div className="w-full sm:w-32">
+                <input
+                  type="number"
+                  min="1"
+                  value={customPrice}
+                  onChange={(e) => setCustomPrice(e.target.value)}
+                  placeholder="Price (₹)"
+                  className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-200"
+                />
+              </div>
+              <button
+                type="submit"
+                className="px-4 py-1.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1 shadow-lg shadow-brand-950/20 active:scale-95 transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Item</span>
+              </button>
+            </form>
           </div>
 
           {/* Dish Grid */}

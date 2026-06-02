@@ -82,7 +82,7 @@ const seedData = async () => {
         let updated = false;
         for (const item of order.items) {
           if (!item.category) {
-            item.category = dishMap[item.dishId.toString()] || 'Other';
+            item.category = (item.dishId && dishMap[item.dishId.toString()]) || 'Quick Items';
             updated = true;
           }
         }

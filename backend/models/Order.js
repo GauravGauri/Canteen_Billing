@@ -22,7 +22,7 @@ const orderSchema = new mongoose.Schema(
         dishId: {
           type: mongoose.Schema.Types.ObjectId,
           ref: 'Dish',
-          required: true,
+          required: false,
         },
         name: {
           type: String,
