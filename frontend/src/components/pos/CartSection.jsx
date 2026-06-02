@@ -2,7 +2,7 @@ import React from 'react';
 import { ShoppingCart, Minus, Plus, Trash2, Printer, Receipt } from 'lucide-react';
 import { usePosStore } from '../../store/usePosStore';
 
-const CartSection = () => {
+const CartSection = ({ isDrawer = false, onClose }) => {
   const cart = usePosStore((state) => state.cart);
   const discount = usePosStore((state) => state.discount);
   const taxRate = usePosStore((state) => state.taxRate);
@@ -29,7 +29,9 @@ const CartSection = () => {
   const netTotal = Math.max(0, subtotal + tax - discount);
 
   return (
-    <div className="glass rounded-3xl p-6 border border-slate-800 sticky top-28 flex flex-col max-h-[82vh] justify-between shadow-2xl">
+    <div className={`glass rounded-3xl p-6 border border-slate-800 shadow-2xl ${
+      isDrawer ? 'h-full flex flex-col justify-between' : 'sticky top-28 flex flex-col max-h-[82vh] justify-between'
+    }`}>
       <div>
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
@@ -198,7 +200,10 @@ const CartSection = () => {
           </button>
 
           <button
-            onClick={sendToKitchen}
+            onClick={() => {
+              sendToKitchen();
+              if (onClose) onClose();
+            }}
             disabled={cart.length === 0 || loading}
             className="py-2.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-brand-400 hover:text-brand-350 font-semibold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all disabled:opacity-40"
           >
@@ -207,7 +212,10 @@ const CartSection = () => {
           </button>
 
           <button
-            onClick={() => setIsSettleModalOpen(true)}
+            onClick={() => {
+              setIsSettleModalOpen(true);
+              if (onClose) onClose();
+            }}
             disabled={cart.length === 0 || loading}
             className="col-span-2 py-3 bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-brand-600/15 transition-all disabled:opacity-40"
           >
@@ -220,7 +228,10 @@ const CartSection = () => {
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => quickBill('cash')}
+                onClick={() => {
+                  quickBill('cash');
+                  if (onClose) onClose();
+                }}
                 disabled={cart.length === 0 || loading}
                 className="py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800/20 disabled:text-emerald-500/50 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 shadow-lg shadow-emerald-950/20"
               >
@@ -228,7 +239,10 @@ const CartSection = () => {
               </button>
               <button
                 type="button"
-                onClick={() => quickBill('upi')}
+                onClick={() => {
+                  quickBill('upi');
+                  if (onClose) onClose();
+                }}
                 disabled={cart.length === 0 || loading}
                 className="py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800/20 disabled:text-blue-500/50 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 shadow-lg shadow-blue-950/20"
               >

@@ -12,6 +12,7 @@ import {
   Sparkles,
   Utensils,
   Percent,
+  X,
 } from 'lucide-react';
 
 const QuickBill = () => {
@@ -37,6 +38,7 @@ const QuickBill = () => {
   const [customName, setCustomName] = useState('');
   const [customPrice, setCustomPrice] = useState('');
   const [saveToDb, setSaveToDb] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   useEffect(() => {
     fetchDishes();
@@ -237,6 +239,153 @@ const QuickBill = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const renderCart = (isDrawer = false, onCloseDrawer = null) => {
+    return (
+      <div className={`glass-card rounded-3xl p-6 border border-slate-800 shadow-2xl ${
+        isDrawer ? 'h-full flex flex-col justify-between' : 'sticky top-28 flex flex-col max-h-[82vh] justify-between'
+      }`}>
+        <div>
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-slate-855 pb-4 mb-4">
+            <div className="flex items-center gap-2.5">
+              <ShoppingBag className="w-5 h-5 text-brand-400" />
+              <h3 className="font-bold text-slate-100 text-base">Quick Cart</h3>
+            </div>
+            <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/10 uppercase tracking-wider">
+              Instant Checkout
+            </span>
+          </div>
+
+          {/* Items List */}
+          <div className="overflow-y-auto max-h-[35vh] pr-1 space-y-3 mb-4 scrollbar-thin">
+            {cart.map((item) => (
+              <div key={item.dishId} className="flex items-center justify-between bg-slate-955 p-3 rounded-xl border border-slate-855">
+                <div className="max-w-[55%]">
+                  <h5 className="font-semibold text-xs text-slate-200 truncate">{item.name}</h5>
+                  <span className="text-[10px] text-slate-500">₹{item.price} each</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center bg-slate-900 rounded-lg p-0.5 border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => adjustQty(item.dishId, 'decrease')}
+                      className="p-1 rounded text-slate-400 hover:text-slate-200"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="text-xs font-bold px-2 text-slate-200">{item.quantity}</span>
+                    <button
+                      type="button"
+                      onClick={() => adjustQty(item.dishId, 'increase')}
+                      className="p-1 rounded text-slate-400 hover:text-slate-200"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => removeFromCart(item.dishId)}
+                    className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {cart.length === 0 && (
+              <div className="py-16 text-center text-xs text-slate-500 flex flex-col items-center gap-3">
+                <ShoppingBag className="w-8 h-8 opacity-25" />
+                <span>Cart is empty. Tap products to add.</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Calculations & Checkout Trigger */}
+        <div className="border-t border-slate-855 pt-4 space-y-4">
+          <div className="space-y-2 text-xs">
+            {/* Discount */}
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400 flex items-center gap-1">
+                <Percent className="w-3.5 h-3.5 text-slate-500" />
+                <span>Apply Discount (₹)</span>
+              </span>
+              <input
+                type="number"
+                min="0"
+                value={discount === 0 ? '' : discount}
+                onChange={(e) => setDiscount(Math.max(0, Number(e.target.value)))}
+                placeholder="0"
+                className="w-20 px-2 py-1 bg-slate-955 border border-slate-800 rounded text-right text-xs focus:ring-1 focus:ring-brand-500 focus:outline-none text-slate-200"
+              />
+            </div>
+
+            <div className="flex justify-between text-slate-400">
+              <span>Subtotal</span>
+              <span>₹{subtotal}</span>
+            </div>
+            <div className="flex justify-between text-slate-400">
+              <span>GST (5%)</span>
+              <span>₹{tax}</span>
+            </div>
+            {discount > 0 && (
+              <div className="flex justify-between text-emerald-400">
+                <span>Discount</span>
+                <span>-₹{discount}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-slate-100 font-bold text-sm border-t border-slate-855 pt-3">
+              <span>Total Due</span>
+              <span className="text-brand-400 text-base">₹{netTotal.toFixed(2)}</span>
+            </div>
+          </div>
+
+          {/* Payment Action Row */}
+          <div className="grid grid-cols-2 gap-3 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                setCart([]);
+                if (onCloseDrawer) onCloseDrawer();
+              }}
+              disabled={cart.length === 0 || loading}
+              className="py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-red-400 hover:bg-red-500/5 font-semibold text-xs transition-all disabled:opacity-40"
+            >
+              Clear Cart
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                handleQuickCheckout('cash');
+                if (onCloseDrawer) onCloseDrawer();
+              }}
+              disabled={cart.length === 0 || loading}
+              className="py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800/20 disabled:text-emerald-500/50 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 shadow-lg shadow-emerald-950/20"
+            >
+              <Zap className="w-3.5 h-3.5 fill-white" />
+              <span>⚡ Cash Settle</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                handleQuickCheckout('upi');
+                if (onCloseDrawer) onCloseDrawer();
+              }}
+              disabled={cart.length === 0 || loading}
+              className="col-span-2 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800/20 disabled:text-blue-500/50 text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-40 shadow-lg shadow-blue-950/20"
+            >
+              <Zap className="w-4 h-4 fill-white" />
+              <span>⚡ UPI Instant Settle</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -444,139 +593,8 @@ const QuickBill = () => {
         </div>
 
         {/* Right Side: Fast Checkout Column (4/12 cols) */}
-        <div className="lg:col-span-4">
-          <div className="glass-card rounded-3xl p-6 border border-slate-800 sticky top-28 flex flex-col max-h-[82vh] justify-between shadow-2xl">
-            <div>
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-slate-855 pb-4 mb-4">
-                <div className="flex items-center gap-2.5">
-                  <ShoppingBag className="w-5 h-5 text-brand-400" />
-                  <h3 className="font-bold text-slate-100 text-base">Quick Cart</h3>
-                </div>
-                <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/10 uppercase tracking-wider">
-                  Instant Checkout
-                </span>
-              </div>
-
-              {/* Items List */}
-              <div className="overflow-y-auto max-h-[35vh] pr-1 space-y-3 mb-4 scrollbar-thin">
-                {cart.map((item) => (
-                  <div key={item.dishId} className="flex items-center justify-between bg-slate-955 p-3 rounded-xl border border-slate-855">
-                    <div className="max-w-[55%]">
-                      <h5 className="font-semibold text-xs text-slate-200 truncate">{item.name}</h5>
-                      <span className="text-[10px] text-slate-500">₹{item.price} each</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center bg-slate-900 rounded-lg p-0.5 border border-slate-800">
-                        <button
-                          type="button"
-                          onClick={() => adjustQty(item.dishId, 'decrease')}
-                          className="p-1 rounded text-slate-400 hover:text-slate-200"
-                        >
-                          <Minus className="w-3.5 h-3.5" />
-                        </button>
-                        <span className="text-xs font-bold px-2 text-slate-200">{item.quantity}</span>
-                        <button
-                          type="button"
-                          onClick={() => adjustQty(item.dishId, 'increase')}
-                          className="p-1 rounded text-slate-400 hover:text-slate-200"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => removeFromCart(item.dishId)}
-                        className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-
-                {cart.length === 0 && (
-                  <div className="py-16 text-center text-xs text-slate-500 flex flex-col items-center gap-3">
-                    <ShoppingBag className="w-8 h-8 opacity-25" />
-                    <span>Cart is empty. Tap products to add.</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Calculations & Checkout Trigger */}
-            <div className="border-t border-slate-855 pt-4 space-y-4">
-              <div className="space-y-2 text-xs">
-                {/* Discount */}
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400 flex items-center gap-1">
-                    <Percent className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Apply Discount (₹)</span>
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={discount === 0 ? '' : discount}
-                    onChange={(e) => setDiscount(Math.max(0, Number(e.target.value)))}
-                    placeholder="0"
-                    className="w-20 px-2 py-1 bg-slate-955 border border-slate-800 rounded text-right text-xs focus:ring-1 focus:ring-brand-500 focus:outline-none text-slate-200"
-                  />
-                </div>
-
-                <div className="flex justify-between text-slate-400">
-                  <span>Subtotal</span>
-                  <span>₹{subtotal}</span>
-                </div>
-                <div className="flex justify-between text-slate-400">
-                  <span>GST (5%)</span>
-                  <span>₹{tax}</span>
-                </div>
-                {discount > 0 && (
-                  <div className="flex justify-between text-emerald-400">
-                    <span>Discount</span>
-                    <span>-₹{discount}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-slate-100 font-bold text-sm border-t border-slate-855 pt-3">
-                  <span>Total Due</span>
-                  <span className="text-brand-400 text-base">₹{netTotal.toFixed(2)}</span>
-                </div>
-              </div>
-
-              {/* Payment Action Row */}
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setCart([])}
-                  disabled={cart.length === 0 || loading}
-                  className="py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-red-400 hover:bg-red-500/5 font-semibold text-xs transition-all disabled:opacity-40"
-                >
-                  Clear Cart
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickCheckout('cash')}
-                  disabled={cart.length === 0 || loading}
-                  className="py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800/20 disabled:text-emerald-500/50 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all disabled:opacity-40 shadow-lg shadow-emerald-950/20"
-                >
-                  <Zap className="w-3.5 h-3.5 fill-white" />
-                  <span>⚡ Cash Settle</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickCheckout('upi')}
-                  disabled={cart.length === 0 || loading}
-                  className="col-span-2 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800/20 disabled:text-blue-500/50 text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-40 shadow-lg shadow-blue-950/20"
-                >
-                  <Zap className="w-4 h-4 fill-white" />
-                  <span>⚡ UPI Instant Settle</span>
-                </button>
-              </div>
-            </div>
-
-          </div>
+        <div className="hidden lg:block lg:col-span-4">
+          {renderCart(false)}
         </div>
 
       </div>
@@ -587,6 +605,48 @@ const QuickBill = () => {
         onClose={() => setShowInvoiceModal(false)}
         order={printedOrder}
       />
+
+      {/* Mobile Floating Cart Trigger Button */}
+      {cart.length > 0 && (
+        <button
+          onClick={() => setIsCartOpen(true)}
+          className="lg:hidden fixed bottom-6 right-6 z-40 bg-brand-600 hover:bg-brand-500 text-white font-bold p-4 rounded-full shadow-2xl flex items-center gap-2 active:scale-95 transition-all animate-bounce"
+          title="Open Cart"
+        >
+          <ShoppingBag className="w-5 h-5" />
+          <span className="text-xs">({cart.reduce((sum, item) => sum + item.quantity, 0)})</span>
+          <span className="bg-brand-700 px-2 py-0.5 rounded-lg text-[10px]">₹{netTotal.toFixed(0)}</span>
+        </button>
+      )}
+
+      {/* Mobile Cart Drawer Backdrop */}
+      {isCartOpen && (
+        <div
+          onClick={() => setIsCartOpen(false)}
+          className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-xs"
+        />
+      )}
+
+      {/* Mobile Cart Drawer Panel */}
+      <div className={`lg:hidden fixed right-0 top-0 bottom-0 z-50 w-full max-w-md bg-slate-900 border-l border-slate-800 transition-transform duration-300 ${
+        isCartOpen ? 'translate-x-0' : 'translate-x-full'
+      } p-4 flex flex-col`}>
+        <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-800">
+          <div className="flex items-center gap-2">
+            <ShoppingBag className="w-5 h-5 text-brand-400" />
+            <h3 className="font-bold text-white text-base">Your Quick Cart</h3>
+          </div>
+          <button
+            onClick={() => setIsCartOpen(false)}
+            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {renderCart(true, () => setIsCartOpen(false))}
+        </div>
+      </div>
     </div>
   );
 };
