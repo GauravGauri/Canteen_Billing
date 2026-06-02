@@ -218,8 +218,6 @@ const CartSection = ({ isDrawer = false, onClose }) => {
             <Receipt className="w-4 h-4" />
             <span>Settle & Print Bill</span>
           </button>
-
-
         </div>
       </div>
     </div>
