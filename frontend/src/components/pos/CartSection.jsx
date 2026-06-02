@@ -29,12 +29,11 @@ const CartSection = ({ isDrawer = false, onClose }) => {
   const netTotal = Math.max(0, subtotal + tax - discount);
 
   return (
-    <div className={`glass rounded-3xl p-6 border border-slate-800 shadow-2xl ${
-      isDrawer ? 'h-full flex flex-col justify-between' : 'sticky top-28 flex flex-col max-h-[82vh] justify-between'
+    <div className={`glass rounded-3xl p-6 border border-slate-800 shadow-2xl flex flex-col ${
+      isDrawer ? 'h-full' : 'sticky top-28 max-h-[calc(100vh-130px)]'
     }`}>
-      <div>
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4 shrink-0">
           <div className="flex items-center gap-2.5">
             <ShoppingCart className="w-5 h-5 text-brand-400" />
             <h3 className="font-bold text-slate-100 text-base">Current Cart</h3>
@@ -46,7 +45,7 @@ const CartSection = ({ isDrawer = false, onClose }) => {
 
         {/* Online Platform Selector */}
         {orderType === 'online' && (
-          <div className="bg-slate-950 border border-slate-800 p-3 rounded-2xl mb-4 space-y-1.5 shadow-inner">
+          <div className="bg-slate-955 border border-slate-800 p-3 rounded-2xl mb-4 space-y-1.5 shadow-inner shrink-0">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Online Platform</label>
             <select
               value={onlinePlatform}
@@ -64,7 +63,7 @@ const CartSection = ({ isDrawer = false, onClose }) => {
 
         {/* Table Sharing Active Orders Selection */}
         {orderType === 'dine-in' && selectedTable && (
-          <div className="bg-slate-950 border border-slate-800 p-3 rounded-2xl mb-4 space-y-2 shadow-inner">
+          <div className="bg-slate-955 border border-slate-800 p-3 rounded-2xl mb-4 space-y-2 shadow-inner shrink-0">
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Active Customers</span>
               <button
@@ -76,7 +75,7 @@ const CartSection = ({ isDrawer = false, onClose }) => {
                 <span>New Customer</span>
               </button>
             </div>
-            
+
             {tableActiveOrders.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
                 {tableActiveOrders.map((ord, idx) => {
@@ -86,11 +85,10 @@ const CartSection = ({ isDrawer = false, onClose }) => {
                       key={ord._id}
                       type="button"
                       onClick={() => loadOrderIntoCart(ord)}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                        isSelected
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${isSelected
                           ? 'bg-brand-600/10 border-brand-500 text-brand-400 shadow-sm'
                           : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200'
-                      }`}
+                        }`}
                     >
                       Cust {idx + 1} ({ord.billNo.slice(-4)})
                     </button>
@@ -109,7 +107,7 @@ const CartSection = ({ isDrawer = false, onClose }) => {
         )}
 
         {/* Cart Items list */}
-        <div className="overflow-y-auto max-h-[30vh] pr-1 space-y-3 mb-4">
+        <div className="flex-1 overflow-y-auto pr-1 space-y-3 mb-4 scrollbar-thin">
           {cart.map((item) => (
             <div key={item.dishId} className="flex items-center justify-between bg-slate-900/50 border border-slate-800/60 p-3 rounded-xl">
               <div className="max-w-[55%]">
@@ -151,10 +149,9 @@ const CartSection = ({ isDrawer = false, onClose }) => {
             </div>
           )}
         </div>
-      </div>
 
       {/* Calculations & Checkout */}
-      <div className="border-t border-slate-850 pt-4 space-y-4">
+      <div className="border-t border-slate-850 pt-4 space-y-4 shrink-0">
         <div className="space-y-2 text-xs">
           {/* Discount input */}
           <div className="flex items-center justify-between">
