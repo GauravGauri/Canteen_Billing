@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import {
@@ -38,6 +38,19 @@ const Dashboard = () => {
   const [endDate, setEndDate] = useState('');
   const [exporting, setExporting] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowExportDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     fetchDashboardData(startDate, endDate);
@@ -435,7 +448,7 @@ const Dashboard = () => {
             {/* Export Dropdown */}
             <div 
               className="relative"
-              onMouseLeave={() => setShowExportDropdown(false)}
+              ref={dropdownRef}
             >
               <button
                 onClick={() => setShowExportDropdown(!showExportDropdown)}
