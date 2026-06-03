@@ -24,6 +24,7 @@ import {
   Sparkles,
   Utensils,
   Package,
+  ChevronDown,
 } from 'lucide-react';
 
 const COLORS = ['#5275ff', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444'];
@@ -36,6 +37,7 @@ const Dashboard = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [exporting, setExporting] = useState(false);
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
 
   useEffect(() => {
     fetchDashboardData(startDate, endDate);
@@ -157,6 +159,217 @@ const Dashboard = () => {
     }
   };
 
+  const handleExportPDF = async () => {
+    setExporting(true);
+    try {
+      const params = {};
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+
+      const response = await axios.get('/orders', { params });
+      if (response.data.success) {
+        const orders = response.data.data;
+        if (orders.length === 0) {
+          alert('No bill history found for the selected date range.');
+          return;
+        }
+
+        // Open new window for print document
+        const printWindow = window.open('', '_blank');
+        
+        // Calculate totals
+        const totalAmount = orders.reduce((sum, order) => sum + order.total, 0);
+        const totalSubtotal = orders.reduce((sum, order) => sum + order.subTotal, 0);
+        const totalTax = orders.reduce((sum, order) => sum + order.tax, 0);
+        const totalDiscount = orders.reduce((sum, order) => sum + order.discount, 0);
+
+        const title = `Bill History Report${startDate ? ` (${startDate} to ${endDate || 'Present'})` : ''}`;
+
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>${title}</title>
+              <style>
+                body {
+                  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                  margin: 40px;
+                  color: #1e293b;
+                  background-color: #ffffff;
+                }
+                .header {
+                  border-bottom: 2px solid #e2e8f0;
+                  padding-bottom: 20px;
+                  margin-bottom: 25px;
+                }
+                .header h1 {
+                  margin: 0;
+                  font-size: 26px;
+                  color: #0f172a;
+                  font-weight: 800;
+                  letter-spacing: -0.5px;
+                }
+                .header h2 {
+                  margin: 5px 0 0;
+                  font-size: 18px;
+                  color: #64748b;
+                  font-weight: 500;
+                }
+                .header .meta {
+                  margin-top: 10px;
+                  font-size: 12px;
+                  color: #94a3b8;
+                }
+                .summary-cards {
+                  display: grid;
+                  grid-template-columns: repeat(4, 1fr);
+                  gap: 15px;
+                  margin-bottom: 30px;
+                }
+                .card {
+                  border: 1px solid #e2e8f0;
+                  border-radius: 12px;
+                  padding: 15px;
+                  background-color: #f8fafc;
+                }
+                .card h3 {
+                  margin: 0;
+                  font-size: 11px;
+                  color: #64748b;
+                  text-transform: uppercase;
+                  letter-spacing: 0.5px;
+                  font-weight: 600;
+                }
+                .card p {
+                  margin: 6px 0 0;
+                  font-size: 20px;
+                  font-weight: 700;
+                  color: #0f172a;
+                }
+                table {
+                  width: 100%;
+                  border-collapse: collapse;
+                  margin-top: 20px;
+                  font-size: 12px;
+                }
+                th, td {
+                  border-bottom: 1px solid #e2e8f0;
+                  padding: 10px 12px;
+                  text-align: left;
+                }
+                th {
+                  background-color: #f1f5f9;
+                  font-weight: bold;
+                  color: #475569;
+                }
+                tr:nth-child(even) {
+                  background-color: #f8fafc;
+                }
+                .text-right {
+                  text-align: right;
+                }
+                .bold {
+                  font-weight: 700;
+                }
+                .badge {
+                  padding: 3px 8px;
+                  border-radius: 9999px;
+                  font-size: 10px;
+                  font-weight: 600;
+                  text-transform: uppercase;
+                  display: inline-block;
+                }
+                .badge-paid { background-color: #d1e7dd; color: #0f5132; }
+                .badge-kitchen { background-color: #cff4fc; color: #087990; }
+                .badge-ready { background-color: #dbf2e3; color: #198754; }
+                .badge-pending { background-color: #f8d7da; color: #842029; }
+                .badge-served { background-color: #fff3cd; color: #664d03; }
+                .badge-cancelled { background-color: #f8d7da; color: #842029; }
+                @media print {
+                  body { margin: 15px; }
+                  button { display: none; }
+                }
+              </style>
+            </head>
+            <body>
+              <div class="header">
+                <h1>KK Food Canteen</h1>
+                <h2>Bill History Report</h2>
+                <div class="meta">
+                  <span>Generated on: ${new Date().toLocaleString()}</span>
+                  ${startDate || endDate ? ` | <span>Period: ${startDate || 'Beginning'} to ${endDate || 'Present'}</span>` : ' | <span>Period: All Time</span>'}
+                </div>
+              </div>
+
+              <div class="summary-cards">
+                <div class="card">
+                  <h3>Total Bills</h3>
+                  <p>${orders.length}</p>
+                </div>
+                <div class="card">
+                  <h3>Subtotal</h3>
+                  <p>₹${totalSubtotal.toFixed(2)}</p>
+                </div>
+                <div class="card">
+                  <h3>Total Discount</h3>
+                  <p>₹${totalDiscount.toFixed(2)}</p>
+                </div>
+                <div class="card">
+                  <h3>Net Revenue</h3>
+                  <p>₹${totalAmount.toFixed(2)}</p>
+                </div>
+              </div>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th>Bill No</th>
+                    <th>Date & Time</th>
+                    <th>Order Type</th>
+                    <th>Table</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                    <th class="text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${orders.map(order => {
+                    const orderDate = new Date(order.createdAt);
+                    const formattedDate = orderDate.toLocaleDateString() + ' ' + orderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const tableNo = order.tableId?.tableNo || 'N/A';
+                    const badgeClass = `badge-${order.status}`;
+                    return `
+                      <tr>
+                        <td class="bold">${order.billNo}</td>
+                        <td>${formattedDate}</td>
+                        <td style="text-transform: capitalize;">${order.type}</td>
+                        <td>${tableNo}</td>
+                        <td style="text-transform: capitalize;">${order.paymentMethod}</td>
+                        <td><span class="badge ${badgeClass}">${order.status}</span></td>
+                        <td class="text-right bold">₹${order.total.toFixed(2)}</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+
+              <script>
+                window.onload = function() {
+                  window.print();
+                };
+              </script>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+      }
+    } catch (error) {
+      console.error('Failed to export PDF data', error);
+      alert('Error exporting PDF: ' + error.message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const activeTablesCount = tables.filter((t) => t.status !== 'available').length;
 
   if (loading || !stats) {
@@ -219,14 +432,44 @@ const Dashboard = () => {
               </button>
             )}
 
-            <button
-              onClick={handleExportCSV}
-              disabled={exporting}
-              className="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs font-bold text-white transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            {/* Export Dropdown */}
+            <div 
+              className="relative"
+              onMouseLeave={() => setShowExportDropdown(false)}
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>{exporting ? 'Exporting...' : 'Export Data'}</span>
-            </button>
+              <button
+                onClick={() => setShowExportDropdown(!showExportDropdown)}
+                disabled={exporting}
+                className="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs font-bold text-white transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{exporting ? 'Exporting...' : 'Export Data'}</span>
+                <ChevronDown className="w-3.5 h-3.5 ml-1" />
+              </button>
+
+              {showExportDropdown && (
+                <div className="absolute right-0 mt-2 w-44 bg-slate-950 border border-slate-800 rounded-xl shadow-xl z-10 py-1.5 overflow-hidden">
+                  <button
+                    onClick={() => {
+                      setShowExportDropdown(false);
+                      handleExportCSV();
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-900 hover:text-white transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <span>Download CSV</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowExportDropdown(false);
+                      handleExportPDF();
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-900 hover:text-white transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <span>Download PDF Report</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
