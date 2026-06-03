@@ -26,39 +26,39 @@ const KotModal = ({ isOpen, onClose, order }) => {
           </button>
         </div>
 
-        {/* Slip Preview Area (Styled like thermal slip) */}
-        <div className="p-6 overflow-y-auto flex-1 bg-slate-950/40">
-          <div className="bg-white text-black p-4 rounded-lg shadow-inner font-mono text-sm max-w-[280px] mx-auto leading-relaxed border border-slate-300">
-            <div className="text-center border-b border-dashed border-black pb-2 mb-3">
-              <h4 className="font-bold text-base uppercase">KITCHEN SLIP</h4>
-              <p className="text-xs">KK Food Canteen</p>
+        {/* Slip Preview Area (Styled like 58mm thermal slip) */}
+        <div className="p-6 overflow-y-auto flex-1 bg-slate-950/40 flex justify-center">
+          <div className="bg-white text-black p-3.5 rounded-lg shadow-inner font-mono text-[10px] w-[58mm] max-w-[220px] leading-tight border border-slate-300">
+            <div className="text-center border-b border-dashed border-black pb-1.5 mb-2">
+              <h4 className="font-bold text-xs uppercase tracking-wider">KITCHEN SLIP</h4>
+              <p className="text-[9px]">KK Food Canteen</p>
             </div>
 
-            <div className="space-y-1 text-xs mb-3">
+            <div className="space-y-0.5 text-[9px] mb-2">
               <p><span className="font-bold">Bill No:</span> {order.billNo}</p>
               <p><span className="font-bold">Date:</span> {new Date(order.createdAt || Date.now()).toLocaleTimeString()}</p>
               <p><span className="font-bold">Table:</span> {order.tableId?.tableNo || 'Takeaway'}</p>
               <p><span className="font-bold">Type:</span> {order.type?.toUpperCase()}</p>
             </div>
 
-            <table className="w-full text-xs text-left mb-3">
+            <table className="w-full text-[10px] text-left mb-2 border-collapse">
               <thead>
                 <tr className="border-b border-dashed border-black font-bold">
-                  <th className="pb-1">Item Description</th>
+                  <th className="pb-1">Item</th>
                   <th className="pb-1 text-right">Qty</th>
                 </tr>
               </thead>
               <tbody>
                 {order.items.map((item, idx) => (
-                  <tr key={idx} className="border-b border-slate-100">
-                    <td className="py-1 font-bold">{item.name}</td>
-                    <td className="py-1 text-right font-bold">{item.quantity}</td>
+                  <tr key={idx} className="border-b border-dotted border-slate-200">
+                    <td className="py-1 font-bold pr-1 break-words">{item.name}</td>
+                    <td className="py-1 text-right font-bold">x{item.quantity}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
 
-            <div className="text-center text-[10px] border-t border-dashed border-black pt-2 mt-2">
+            <div className="text-center text-[8px] border-t border-dashed border-black pt-1.5 mt-1.5">
               <p>*** SEND TO KITCHEN ***</p>
             </div>
           </div>
@@ -84,33 +84,33 @@ const KotModal = ({ isOpen, onClose, order }) => {
 
       {/* CSS Print-only rendering structure */}
       <div className="print-area font-mono text-black bg-white">
-        <div style={{ textAlign: 'center', borderBottom: '1px dashed black', paddingBottom: '5px', marginBottom: '10px' }}>
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>KITCHEN SLIP</h3>
-          <p style={{ margin: 0, fontSize: '12px' }}>KK Food Canteen</p>
+        <div style={{ textAlign: 'center', borderBottom: '1px dashed black', paddingBottom: '4px', marginBottom: '8px' }}>
+          <h3 style={{ margin: 0, fontSize: '13px', fontWeight: 'bold' }}>KITCHEN SLIP</h3>
+          <p style={{ margin: 0, fontSize: '9px' }}>KK Food Canteen</p>
         </div>
-        <div style={{ fontSize: '11px', marginBottom: '10px', lineHeight: '1.4' }}>
+        <div style={{ fontSize: '9px', marginBottom: '8px', lineHeight: '1.3' }}>
           <div><strong>Bill No:</strong> {order?.billNo}</div>
           <div><strong>Date:</strong> {new Date(order?.createdAt || Date.now()).toLocaleString()}</div>
           <div><strong>Table:</strong> {order?.tableId?.tableNo || 'Takeaway'}</div>
           <div><strong>Type:</strong> {order?.type?.toUpperCase()}</div>
         </div>
-        <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse', marginBottom: '10px' }}>
+        <table style={{ width: '100%', fontSize: '10px', borderCollapse: 'collapse', marginBottom: '8px' }}>
           <thead>
             <tr style={{ borderBottom: '1px dashed black', fontWeight: 'bold' }}>
-              <th style={{ textAlign: 'left', paddingBottom: '4px' }}>Item Name</th>
-              <th style={{ textAlign: 'right', paddingBottom: '4px' }}>Qty</th>
+              <th style={{ textAlign: 'left', paddingBottom: '3px' }}>Item</th>
+              <th style={{ textAlign: 'right', paddingBottom: '3px' }}>Qty</th>
             </tr>
           </thead>
           <tbody>
             {order?.items.map((item, idx) => (
-              <tr key={idx}>
-                <td style={{ paddingTop: '4px', paddingBottom: '4px', fontWeight: 'bold' }}>{item.name}</td>
-                <td style={{ textAlign: 'right', paddingTop: '4px', paddingBottom: '4px', fontWeight: 'bold' }}>{item.quantity}</td>
+              <tr key={idx} style={{ borderBottom: '1px dotted #ccc' }}>
+                <td style={{ paddingTop: '3px', paddingBottom: '3px', fontWeight: 'bold', wordBreak: 'break-word' }}>{item.name}</td>
+                <td style={{ textAlign: 'right', paddingTop: '3px', paddingBottom: '3px', fontWeight: 'bold' }}>x{item.quantity}</td>
               </tr>
             ))}
           </tbody>
         </table>
-        <div style={{ textAlign: 'center', fontSize: '10px', borderTop: '1px dashed black', paddingTop: '8px', marginTop: '10px' }}>
+        <div style={{ textAlign: 'center', fontSize: '9px', borderTop: '1px dashed black', paddingTop: '6px', marginTop: '6px' }}>
           <p style={{ margin: 0 }}>*** SEND TO KITCHEN ***</p>
         </div>
       </div>

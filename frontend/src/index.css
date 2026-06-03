@@ -111,13 +111,15 @@ body {
     position: absolute;
     left: 0;
     top: 0;
-    width: 80mm; /* standard POS receipt width */
+    width: 58mm; /* standard 58mm POS receipt width */
+    max-width: 58mm;
     color: #000000 !important;
     background: #ffffff !important;
     font-family: 'Courier New', Courier, monospace;
-    font-size: 12px;
-    padding: 2mm;
+    font-size: 10px; /* slightly smaller font for narrow 58mm width */
+    padding: 1mm 2mm; /* compact margins for receipt roll */
     box-sizing: border-box;
+    line-height: 1.3;
   }
   
   /* Reset print styles */
@@ -125,9 +127,9 @@ body {
     display: none !important;
   }
   
-  /* Ensure correct scaling on printed slips */
+  /* Ensure correct scaling on printed slips and remove headers/footers */
   @page {
-    size: auto;
+    size: 58mm auto;
     margin: 0mm;
   }
 }
