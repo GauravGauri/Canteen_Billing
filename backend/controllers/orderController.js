@@ -50,7 +50,7 @@ const restoreStock = async (orderItems) => {
 // @route   GET /api/orders
 // @access  Private (Admin)
 const getOrders = async (req, res) => {
-  const { status, type, tableId } = req.query;
+  const { status, type, tableId, startDate, endDate } = req.query;
   const filter = {};
 
   if (status) {
@@ -62,6 +62,18 @@ const getOrders = async (req, res) => {
   }
   if (type) filter.type = type;
   if (tableId) filter.tableId = tableId;
+
+  if (startDate || endDate) {
+    filter.createdAt = {};
+    if (startDate) {
+      filter.createdAt.$gte = new Date(startDate);
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      filter.createdAt.$lte = end;
+    }
+  }
 
   try {
     const orders = await Order.find(filter)
@@ -312,10 +324,22 @@ const printBill = async (req, res) => {
 // @route   GET /api/orders/stats
 // @access  Private (Admin)
 const getDashboardStats = async (req, res) => {
+  const { startDate, endDate } = req.query;
   try {
-    // 1. Total revenue (aggregated directly in MongoDB)
+    const matchQuery = { status: 'paid' };
+    if (startDate || endDate) {
+      matchQuery.createdAt = {};
+      if (startDate) matchQuery.createdAt.$gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        matchQuery.createdAt.$lte = end;
+      }
+    }
+
+    // 1. Total revenue (aggregated directly in MongoDB) within the date range
     const paidStats = await Order.aggregate([
-      { $match: { status: 'paid' } },
+      { $match: matchQuery },
       {
         $group: {
           _id: null,
@@ -325,16 +349,36 @@ const getDashboardStats = async (req, res) => {
     ]);
     const totalRevenue = paidStats[0]?.totalRevenue || 0;
 
-    // 2. Active orders count (pending, kitchen, ready, or served) - using optimized countDocuments
-    const activeOrdersCount = await Order.countDocuments({ status: { $in: ['pending', 'kitchen', 'ready', 'served'] } });
+    // 2. Active orders count (pending, kitchen, ready, or served) - filtered by date range if provided
+    const activeMatch = { status: { $in: ['pending', 'kitchen', 'ready', 'served'] } };
+    if (startDate || endDate) {
+      activeMatch.createdAt = {};
+      if (startDate) activeMatch.createdAt.$gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        activeMatch.createdAt.$lte = end;
+      }
+    }
+    const activeOrdersCount = await Order.countDocuments(activeMatch);
 
     // 3. Pending bills count (unpaid pending/kitchen/ready/served orders)
-    const pendingBillsCount = await Order.countDocuments({
+    const pendingMatch = {
       status: { $in: ['pending', 'kitchen', 'ready', 'served'] },
       paymentMethod: 'unpaid',
-    });
+    };
+    if (startDate || endDate) {
+      pendingMatch.createdAt = {};
+      if (startDate) pendingMatch.createdAt.$gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        pendingMatch.createdAt.$lte = end;
+      }
+    }
+    const pendingBillsCount = await Order.countDocuments(pendingMatch);
 
-    // 4. Occupied tables count
+    // 4. Occupied tables count (always real-time, not historic)
     const occupiedTablesCount = await Table.countDocuments({ status: { $in: ['occupied', 'billed'] } });
 
     // 5. Monthly & Yearly revenue (single aggregation filtering since start of year)
@@ -364,22 +408,38 @@ const getDashboardStats = async (req, res) => {
     const revenueThisMonth = periodicStats[0]?.revenueThisMonth || 0;
     const revenueThisYear = periodicStats[0]?.revenueThisYear || 0;
 
-    // 6. Last 7 Days Sales Trend (1 fast query + filtering in memory instead of 7 DB roundtrips)
-    const startOfTrend = new Date();
-    startOfTrend.setDate(startOfTrend.getDate() - 6);
-    startOfTrend.setHours(0, 0, 0, 0);
+    // 6. Dynamic Sales Trend based on date range (defaults to last 7 days)
+    let trendStart = new Date();
+    trendStart.setDate(trendStart.getDate() - 6);
+    trendStart.setHours(0, 0, 0, 0);
+
+    let trendEnd = new Date();
+    trendEnd.setHours(23, 59, 59, 999);
+
+    if (startDate) {
+      trendStart = new Date(startDate);
+      trendStart.setHours(0, 0, 0, 0);
+    }
+    if (endDate) {
+      trendEnd = new Date(endDate);
+      trendEnd.setHours(23, 59, 59, 999);
+    }
 
     const trendOrders = await Order.find({
       status: 'paid',
-      createdAt: { $gte: startOfTrend },
+      createdAt: { $gte: trendStart, $lte: trendEnd },
     })
       .select('total createdAt')
       .lean();
 
     const salesTrend = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
+    const diffTime = Math.abs(trendEnd - trendStart);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const iterations = Math.min(diffDays || 1, 366);
+
+    for (let i = 0; i < iterations; i++) {
+      const d = new Date(trendStart);
+      d.setDate(d.getDate() + i);
       d.setHours(0, 0, 0, 0);
 
       const nextD = new Date(d);
@@ -387,13 +447,13 @@ const getDashboardStats = async (req, res) => {
 
       const dailyOrders = trendOrders.filter((o) => o.createdAt >= d && o.createdAt < nextD);
       const revenue = dailyOrders.reduce((sum, o) => sum + o.total, 0);
-      const dayLabel = d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+      const dayLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       salesTrend.push({ date: dayLabel, revenue });
     }
 
     // 7. Category-wise sales distribution (fully optimized without $lookup)
     const categorySales = await Order.aggregate([
-      { $match: { status: 'paid' } },
+      { $match: matchQuery },
       { $unwind: '$items' },
       {
         $group: {
