@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { useHotelStore } from '../store/useHotelStore';
 import { Users, Search, Plus, Sparkles, UserCheck, Star } from 'lucide-react';
+import { validateEmail, validatePhone, validateMinLength } from '../utils/validation';
 
 const Guests = () => {
   const { guests, fetchGuests, createGuest } = useHotelStore();
@@ -17,14 +18,52 @@ const Guests = () => {
   const [preferences, setPreferences] = useState('');
   const [specialRequests, setSpecialRequests] = useState('');
   const [notes, setNotes] = useState('');
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     fetchGuests(search);
   }, [search, fetchGuests]);
 
+  const handleCloseModal = () => {
+    setName('');
+    setEmail('');
+    setPhone('');
+    setIdNumber('');
+    setPreferences('');
+    setSpecialRequests('');
+    setNotes('');
+    setErrors({});
+    setShowAddGuest(false);
+  };
+
   const handleCreateGuest = async (e) => {
     e.preventDefault();
-    if (!name || !phone) return;
+    
+    // Clear previous errors
+    const newErrors = {};
+
+    if (!validateMinLength(name, 2)) {
+      newErrors.name = 'Full Name must be at least 2 characters';
+    }
+
+    if (!validatePhone(phone)) {
+      newErrors.phone = 'Enter valid phone number (7-15 digits)';
+    }
+
+    if (email && !validateEmail(email)) {
+      newErrors.email = 'Enter a valid email address';
+    }
+
+    if (idNumber && !validateMinLength(idNumber, 3)) {
+      newErrors.idNumber = 'ID Number must be at least 3 characters';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     const ok = await createGuest({
       name,
       email,
@@ -43,6 +82,7 @@ const Guests = () => {
       setPreferences('');
       setSpecialRequests('');
       setNotes('');
+      setErrors({});
       setShowAddGuest(false);
     }
   };
@@ -148,6 +188,7 @@ const Guests = () => {
                     onChange={(e) => setName(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
                   />
+                  {errors.name && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.name}</p>}
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Phone Number</label>
@@ -159,6 +200,7 @@ const Guests = () => {
                     onChange={(e) => setPhone(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
                   />
+                  {errors.phone && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.phone}</p>}
                 </div>
               </div>
 
@@ -171,6 +213,7 @@ const Guests = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
                 />
+                {errors.email && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.email}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -196,6 +239,7 @@ const Guests = () => {
                     onChange={(e) => setIdNumber(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
                   />
+                  {errors.idNumber && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.idNumber}</p>}
                 </div>
               </div>
 
@@ -223,7 +267,7 @@ const Guests = () => {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowAddGuest(false)}
+                  onClick={handleCloseModal}
                   className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-350 text-xs font-semibold cursor-pointer"
                 >
                   Cancel

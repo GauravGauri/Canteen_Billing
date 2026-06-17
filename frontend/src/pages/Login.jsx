@@ -26,6 +26,16 @@ const Login = () => {
       return;
     }
 
+    if (username.trim().length < 3) {
+      setError('Username must be at least 3 characters');
+      return;
+    }
+
+    if (password.length < 4) {
+      setError('Password must be at least 4 characters');
+      return;
+    }
+
     setError('');
     setLoading(true);
 

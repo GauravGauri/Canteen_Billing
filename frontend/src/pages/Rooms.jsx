@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { useHotelStore } from '../store/useHotelStore';
 import { Bed, Filter, RefreshCw, Plus, ShieldAlert, Sparkles, AlertCircle, Wrench, RefreshCw as CleanIcon } from 'lucide-react';
+import { validateMinLength, validatePositiveNumber } from '../utils/validation';
 
 const STATUS_CONFIGS = {
   available: { label: 'Available', bg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' },
@@ -30,6 +31,7 @@ const Rooms = () => {
   const [catOccupancy, setCatOccupancy] = useState(2);
   const [catAmenities, setCatAmenities] = useState('');
   const [catDesc, setCatDesc] = useState('');
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     fetchRooms();
@@ -38,7 +40,22 @@ const Rooms = () => {
 
   const handleCreateRoom = async (e) => {
     e.preventDefault();
-    if (!roomNo || !categoryId) return;
+    const newErrors = {};
+
+    if (!roomNo.trim()) {
+      newErrors.roomNo = 'Room number is required';
+    }
+
+    if (!categoryId) {
+      newErrors.categoryId = 'Room category is required';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     const ok = await createRoom({
       roomNo,
       categoryId,
@@ -48,17 +65,38 @@ const Rooms = () => {
       setRoomNo('');
       setCategoryId('');
       setRoomNotes('');
+      setErrors({});
       setShowAddRoom(false);
     }
   };
 
   const handleCreateCategory = async (e) => {
     e.preventDefault();
-    if (!catName || !catPrice) return;
+    const newErrors = {};
+
+    if (!validateMinLength(catName, 3)) {
+      newErrors.catName = 'Category Name must be at least 3 characters';
+    }
+
+    if (!validatePositiveNumber(catPrice)) {
+      newErrors.catPrice = 'Base Price must be a valid positive number';
+    }
+
+    const occupancyNum = Number(catOccupancy);
+    if (isNaN(occupancyNum) || occupancyNum < 1) {
+      newErrors.catOccupancy = 'Max Occupancy must be at least 1 person';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     const ok = await createRoomCategory({
       name: catName,
       basePrice: Number(catPrice),
-      maxOccupancy: Number(catOccupancy),
+      maxOccupancy: occupancyNum,
       amenities: catAmenities.split(',').map(a => a.trim()).filter(Boolean),
       description: catDesc,
     });
@@ -68,6 +106,7 @@ const Rooms = () => {
       setCatOccupancy(2);
       setCatAmenities('');
       setCatDesc('');
+      setErrors({});
       setShowAddCategory(false);
     }
   };
@@ -246,25 +285,31 @@ const Rooms = () => {
             <form onSubmit={handleCreateRoom} className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
               <h3 className="text-sm font-bold text-slate-200">Register New Room</h3>
               <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Room Number (e.g. 101)"
-                  required
-                  value={roomNo}
-                  onChange={(e) => setRoomNo(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
-                />
-                <select
-                  required
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
-                >
-                  <option value="">-- Choose Category --</option>
-                  {categories.map(c => (
-                    <option key={c._id} value={c._id}>{c.name} (${c.basePrice}/night)</option>
-                  ))}
-                </select>
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Room Number (e.g. 101)"
+                    required
+                    value={roomNo}
+                    onChange={(e) => setRoomNo(e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
+                  />
+                  {errors.roomNo && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.roomNo}</p>}
+                </div>
+                <div>
+                  <select
+                    required
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
+                  >
+                    <option value="">-- Choose Category --</option>
+                    {categories.map(c => (
+                      <option key={c._id} value={c._id}>{c.name} (${c.basePrice}/night)</option>
+                    ))}
+                  </select>
+                  {errors.categoryId && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.categoryId}</p>}
+                </div>
                 <textarea
                   placeholder="Room notes/features..."
                   value={roomNotes}
@@ -275,8 +320,14 @@ const Rooms = () => {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowAddRoom(false)}
-                  className="flex-1 py-2 rounded-xl border border-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
+                  onClick={() => {
+                    setRoomNo('');
+                    setCategoryId('');
+                    setRoomNotes('');
+                    setErrors({});
+                    setShowAddRoom(false);
+                  }}
+                  className="flex-1 py-2 rounded-xl border border-slate-700 text-slate-330 text-xs font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -297,30 +348,39 @@ const Rooms = () => {
             <form onSubmit={handleCreateCategory} className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
               <h3 className="text-sm font-bold text-slate-200">New Room Category</h3>
               <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Category Name (e.g. Deluxe Suite)"
-                  required
-                  value={catName}
-                  onChange={(e) => setCatName(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
-                />
-                <input
-                  type="number"
-                  placeholder="Base Price ($ per night)"
-                  required
-                  value={catPrice}
-                  onChange={(e) => setCatPrice(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
-                />
-                <input
-                  type="number"
-                  placeholder="Max Occupants"
-                  required
-                  value={catOccupancy}
-                  onChange={(e) => setCatOccupancy(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
-                />
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Category Name (e.g. Deluxe Suite)"
+                    required
+                    value={catName}
+                    onChange={(e) => setCatName(e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
+                  />
+                  {errors.catName && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.catName}</p>}
+                </div>
+                <div>
+                  <input
+                    type="number"
+                    placeholder="Base Price ($ per night)"
+                    required
+                    value={catPrice}
+                    onChange={(e) => setCatPrice(e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
+                  />
+                  {errors.catPrice && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.catPrice}</p>}
+                </div>
+                <div>
+                  <input
+                    type="number"
+                    placeholder="Max Occupants"
+                    required
+                    value={catOccupancy}
+                    onChange={(e) => setCatOccupancy(e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
+                  />
+                  {errors.catOccupancy && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.catOccupancy}</p>}
+                </div>
                 <input
                   type="text"
                   placeholder="Amenities (comma-separated, e.g. WiFi, Pool)"
@@ -338,8 +398,16 @@ const Rooms = () => {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowAddCategory(false)}
-                  className="flex-1 py-2 rounded-xl border border-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
+                  onClick={() => {
+                    setCatName('');
+                    setCatPrice('');
+                    setCatOccupancy(2);
+                    setCatAmenities('');
+                    setCatDesc('');
+                    setErrors({});
+                    setShowAddCategory(false);
+                  }}
+                  className="flex-1 py-2 rounded-xl border border-slate-700 text-slate-330 text-xs font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>

@@ -18,6 +18,7 @@ import {
   CreditCard,
   Building,
   ShieldAlert,
+  ChefHat,
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -33,6 +34,7 @@ const Sidebar = () => {
       links: [
         { to: '/dashboard', name: 'Dashboard', icon: LayoutDashboard, roles: ['super_admin', 'admin', 'hotel_manager', 'accountant'] },
         { to: '/pos-billing', name: 'POS Billing', icon: Utensils, roles: ['super_admin', 'admin', 'hotel_manager', 'front_desk', 'restaurant_staff'] },
+        { to: '/dish-creator', name: 'Dish Creator', icon: ChefHat, roles: ['super_admin', 'admin', 'hotel_manager', 'restaurant_staff'] },
         { to: '/pos-bill-history', name: 'Bill History', icon: History, roles: ['super_admin', 'admin', 'hotel_manager', 'front_desk', 'restaurant_staff', 'accountant'] },
         { to: '/payment-reports', name: 'Payment Reports', icon: CreditCard, roles: ['super_admin', 'admin', 'accountant'] },
       ],

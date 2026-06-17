@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useHotelStore } from '../store/useHotelStore';
 import { Calendar, UserPlus, Filter, Plus, CalendarDays, RefreshCw, DollarSign, Users, Trash2, Edit } from 'lucide-react';
 import DatePicker from '../components/DatePicker';
+import { validatePositiveNumber, validateNonNegativeNumber, validateMinLength, validatePhone, validateEmail } from '../utils/validation';
 
 const Reservations = () => {
   const {
@@ -34,6 +35,7 @@ const Reservations = () => {
   const [advanceDeposit, setAdvanceDeposit] = useState('');
   const [bookingNotes, setBookingNotes] = useState('');
   const [additionalGuests, setAdditionalGuests] = useState([]);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     fetchReservations();
@@ -42,6 +44,30 @@ const Reservations = () => {
   }, [fetchReservations, fetchRooms, fetchGuests]);
 
   const handleAddAdditionalGuestField = () => {
+    // Check occupancy limit
+    let maxOccupancy = 2;
+    if (selectedBooking) {
+      const roomDoc = rooms.find(r => r._id === (selectedBooking.roomId?._id || selectedBooking.roomId));
+      maxOccupancy = roomDoc?.categoryId?.maxOccupancy || 2;
+    } else if (roomId) {
+      const selectedRoom = rooms.find(r => r._id === roomId);
+      maxOccupancy = selectedRoom?.categoryId?.maxOccupancy || 2;
+    }
+
+    if (1 + additionalGuests.length >= maxOccupancy) {
+      setErrors((prev) => ({
+        ...prev,
+        additionalGuests: `Stayer limit reached. This room category only allows a maximum of ${maxOccupancy} occupant(s) total.`
+      }));
+      return;
+    }
+
+    setErrors((prev) => {
+      const copy = { ...prev };
+      delete copy.additionalGuests;
+      return copy;
+    });
+
     setAdditionalGuests([
       ...additionalGuests,
       { name: '', phone: '', email: '', idType: 'Government ID', idNumber: '' }
@@ -56,16 +82,53 @@ const Reservations = () => {
 
   const handleRemoveAdditionalGuestField = (index) => {
     setAdditionalGuests(additionalGuests.filter((_, i) => i !== index));
+    setErrors((prev) => {
+      const copy = { ...prev };
+      delete copy.additionalGuests;
+      return copy;
+    });
   };
 
   const openEditGuestsFlow = (booking) => {
     setSelectedBooking(booking);
     setAdditionalGuests(booking.additionalGuests || []);
+    setErrors({});
     setShowEditGuestsModal(true);
   };
 
   const handleSaveGuests = async () => {
     if (!selectedBooking) return;
+    const newErrors = {};
+
+    const roomDoc = rooms.find(r => r._id === (selectedBooking.roomId?._id || selectedBooking.roomId));
+    const maxOccupancy = roomDoc?.categoryId?.maxOccupancy || 2;
+
+    if (1 + additionalGuests.length > maxOccupancy) {
+      newErrors.additionalGuests = `Stayer limit exceeded. This room only allows max ${maxOccupancy} occupant(s).`;
+    }
+
+    // Validate stayers
+    additionalGuests.forEach((g, idx) => {
+      if (!validateMinLength(g.name, 2)) {
+        newErrors[`stayer_${idx}_name`] = 'Full Name must be at least 2 characters';
+      }
+      if (g.phone && !validatePhone(g.phone)) {
+        newErrors[`stayer_${idx}_phone`] = 'Enter valid phone number (7-15 digits)';
+      }
+      if (g.email && !validateEmail(g.email)) {
+        newErrors[`stayer_${idx}_email`] = 'Enter valid email address';
+      }
+      if (g.idNumber && !validateMinLength(g.idNumber, 3)) {
+        newErrors[`stayer_${idx}_idNumber`] = 'ID Number must be at least 3 characters';
+      }
+    });
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     const ok = await updateReservation(selectedBooking._id, {
       additionalGuests,
     });
@@ -79,7 +142,65 @@ const Reservations = () => {
 
   const handleCreateBooking = async (e) => {
     e.preventDefault();
-    if (!guestId || !roomId || !checkInDate || !checkOutDate || !baseRate) return;
+    const newErrors = {};
+
+    if (!guestId) {
+      newErrors.guestId = 'Guest selection is required';
+    }
+
+    if (!roomId) {
+      newErrors.roomId = 'Room selection is required';
+    }
+
+    if (!checkInDate) {
+      newErrors.checkInDate = 'Check-in date is required';
+    }
+
+    if (!checkOutDate) {
+      newErrors.checkOutDate = 'Check-out date is required';
+    } else if (checkInDate && checkOutDate <= checkInDate) {
+      newErrors.checkOutDate = 'Check-out must be after Check-in';
+    }
+
+    if (!validatePositiveNumber(baseRate)) {
+      newErrors.baseRate = 'Base Rate must be a valid positive number';
+    }
+
+    if (advanceDeposit && !validateNonNegativeNumber(advanceDeposit)) {
+      newErrors.advanceDeposit = 'Advance Deposit must be a valid non-negative number';
+    }
+
+    // Capacity check
+    if (roomId) {
+      const selectedRoom = rooms.find(r => r._id === roomId);
+      const maxOccupancy = selectedRoom?.categoryId?.maxOccupancy || 2;
+      if (1 + additionalGuests.length > maxOccupancy) {
+        newErrors.additionalGuests = `Stayer limit exceeded. This room category only allows max ${maxOccupancy} occupant(s).`;
+      }
+    }
+
+    // Validate stayers
+    additionalGuests.forEach((g, idx) => {
+      if (!validateMinLength(g.name, 2)) {
+        newErrors[`stayer_${idx}_name`] = 'Full Name must be at least 2 characters';
+      }
+      if (g.phone && !validatePhone(g.phone)) {
+        newErrors[`stayer_${idx}_phone`] = 'Enter valid phone number (7-15 digits)';
+      }
+      if (g.email && !validateEmail(g.email)) {
+        newErrors[`stayer_${idx}_email`] = 'Enter valid email address';
+      }
+      if (g.idNumber && !validateMinLength(g.idNumber, 3)) {
+        newErrors[`stayer_${idx}_idNumber`] = 'ID Number must be at least 3 characters';
+      }
+    });
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     const ok = await createReservation({
       guestId,
       roomId,
@@ -99,6 +220,7 @@ const Reservations = () => {
       setAdvanceDeposit('');
       setBookingNotes('');
       setAdditionalGuests([]);
+      setErrors({});
       setShowAddBooking(false);
     }
   };
@@ -283,6 +405,7 @@ const Reservations = () => {
                       <option key={g._id} value={g._id}>{g.name} ({g.phone})</option>
                     ))}
                   </select>
+                  {errors.guestId && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.guestId}</p>}
                 </div>
 
                 {/* Room Selection */}
@@ -299,23 +422,30 @@ const Reservations = () => {
                       <option key={r._id} value={r._id}>Room {r.roomNo} - {r.categoryId?.name} (${r.categoryId?.basePrice}/night)</option>
                     ))}
                   </select>
+                  {errors.roomId && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.roomId}</p>}
                 </div>
 
                 {/* Dates */}
                 <div className="grid grid-cols-2 gap-3">
-                  <DatePicker
-                    label="Check-In"
-                    required
-                    value={checkInDate}
-                    onChange={(val) => setCheckInDate(val)}
-                  />
-                  <DatePicker
-                    label="Check-Out"
-                    required
-                    value={checkOutDate}
-                    onChange={(val) => setCheckOutDate(val)}
-                    minDate={checkInDate}
-                  />
+                  <div>
+                    <DatePicker
+                      label="Check-In"
+                      required
+                      value={checkInDate}
+                      onChange={(val) => setCheckInDate(val)}
+                    />
+                    {errors.checkInDate && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.checkInDate}</p>}
+                  </div>
+                  <div>
+                    <DatePicker
+                      label="Check-Out"
+                      required
+                      value={checkOutDate}
+                      onChange={(val) => setCheckOutDate(val)}
+                      minDate={checkInDate}
+                    />
+                    {errors.checkOutDate && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.checkOutDate}</p>}
+                  </div>
                 </div>
 
                 {/* Rates & Deposits */}
@@ -330,6 +460,7 @@ const Reservations = () => {
                       onChange={(e) => setBaseRate(e.target.value)}
                       className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
                     />
+                    {errors.baseRate && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.baseRate}</p>}
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Advance Deposit ($)</label>
@@ -340,6 +471,7 @@ const Reservations = () => {
                       onChange={(e) => setAdvanceDeposit(e.target.value)}
                       className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
                     />
+                    {errors.advanceDeposit && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.advanceDeposit}</p>}
                   </div>
                 </div>
 
@@ -355,6 +487,7 @@ const Reservations = () => {
                       <Plus className="w-3.5 h-3.5" /> Add Stayer
                     </button>
                   </div>
+                  {errors.additionalGuests && <p className="text-amber-400 text-[10px] font-semibold">{errors.additionalGuests}</p>}
                   {additionalGuests.length > 0 && (
                     <div className="space-y-3 max-h-40 overflow-y-auto pr-1">
                       {additionalGuests.map((g, index) => (
@@ -367,21 +500,27 @@ const Reservations = () => {
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                           <div className="grid grid-cols-2 gap-2">
-                            <input
-                              type="text"
-                              required
-                              placeholder="Full Name"
-                              value={g.name}
-                              onChange={(e) => handleUpdateAdditionalGuestField(index, 'name', e.target.value)}
-                              className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
-                            />
-                            <input
-                              type="text"
-                              placeholder="Phone"
-                              value={g.phone}
-                              onChange={(e) => handleUpdateAdditionalGuestField(index, 'phone', e.target.value)}
-                              className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
-                            />
+                            <div>
+                              <input
+                                type="text"
+                                required
+                                placeholder="Full Name"
+                                value={g.name}
+                                onChange={(e) => handleUpdateAdditionalGuestField(index, 'name', e.target.value)}
+                                className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
+                              />
+                              {errors[`stayer_${index}_name`] && <p className="text-red-400 text-[9px] mt-0.5 font-bold">{errors[`stayer_${index}_name`]}</p>}
+                            </div>
+                            <div>
+                              <input
+                                type="text"
+                                placeholder="Phone"
+                                value={g.phone}
+                                onChange={(e) => handleUpdateAdditionalGuestField(index, 'phone', e.target.value)}
+                                className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
+                              />
+                              {errors[`stayer_${index}_phone`] && <p className="text-red-400 text-[9px] mt-0.5 font-bold">{errors[`stayer_${index}_phone`]}</p>}
+                            </div>
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <select
@@ -394,21 +533,27 @@ const Reservations = () => {
                               <option value="Aadhaar">Aadhaar</option>
                               <option value="Driving License">Driving License</option>
                             </select>
+                            <div>
+                              <input
+                                type="text"
+                                placeholder="ID Number"
+                                value={g.idNumber}
+                                onChange={(e) => handleUpdateAdditionalGuestField(index, 'idNumber', e.target.value)}
+                                className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
+                              />
+                              {errors[`stayer_${index}_idNumber`] && <p className="text-red-400 text-[9px] mt-0.5 font-bold">{errors[`stayer_${index}_idNumber`]}</p>}
+                            </div>
+                          </div>
+                          <div>
                             <input
-                              type="text"
-                              placeholder="ID Number"
-                              value={g.idNumber}
-                              onChange={(e) => handleUpdateAdditionalGuestField(index, 'idNumber', e.target.value)}
+                              type="email"
+                              placeholder="Email Address"
+                              value={g.email}
+                              onChange={(e) => handleUpdateAdditionalGuestField(index, 'email', e.target.value)}
                               className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
                             />
+                            {errors[`stayer_${index}_email`] && <p className="text-red-400 text-[9px] mt-0.5 font-bold">{errors[`stayer_${index}_email`]}</p>}
                           </div>
-                          <input
-                            type="email"
-                            placeholder="Email Address"
-                            value={g.email}
-                            onChange={(e) => handleUpdateAdditionalGuestField(index, 'email', e.target.value)}
-                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
-                          />
                         </div>
                       ))}
                     </div>
@@ -428,7 +573,18 @@ const Reservations = () => {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowAddBooking(false)}
+                  onClick={() => {
+                    setGuestId('');
+                    setRoomId('');
+                    setCheckInDate('');
+                    setCheckOutDate('');
+                    setBaseRate('');
+                    setAdvanceDeposit('');
+                    setBookingNotes('');
+                    setAdditionalGuests([]);
+                    setErrors({});
+                    setShowAddBooking(false);
+                  }}
                   className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-350 text-xs font-semibold cursor-pointer"
                 >
                   Cancel
@@ -564,6 +720,7 @@ const Reservations = () => {
                     <Plus className="w-3.5 h-3.5" /> Add Stayer
                   </button>
                 </div>
+                {errors.additionalGuests && <p className="text-amber-400 text-xs font-semibold">{errors.additionalGuests}</p>}
 
                 <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
                   {additionalGuests.map((g, index) => (
@@ -586,6 +743,7 @@ const Reservations = () => {
                             onChange={(e) => handleUpdateAdditionalGuestField(index, 'name', e.target.value)}
                             className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
                           />
+                          {errors[`stayer_${index}_name`] && <p className="text-red-400 text-[9px] mt-0.5 font-bold">{errors[`stayer_${index}_name`]}</p>}
                         </div>
                         <div>
                           <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-0.5">Phone</label>
@@ -596,6 +754,7 @@ const Reservations = () => {
                             onChange={(e) => handleUpdateAdditionalGuestField(index, 'phone', e.target.value)}
                             className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
                           />
+                          {errors[`stayer_${index}_phone`] && <p className="text-red-400 text-[9px] mt-0.5 font-bold">{errors[`stayer_${index}_phone`]}</p>}
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
@@ -621,6 +780,7 @@ const Reservations = () => {
                             onChange={(e) => handleUpdateAdditionalGuestField(index, 'idNumber', e.target.value)}
                             className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
                           />
+                          {errors[`stayer_${index}_idNumber`] && <p className="text-red-400 text-[9px] mt-0.5 font-bold">{errors[`stayer_${index}_idNumber`]}</p>}
                         </div>
                       </div>
                       <div>
@@ -632,6 +792,7 @@ const Reservations = () => {
                           onChange={(e) => handleUpdateAdditionalGuestField(index, 'email', e.target.value)}
                           className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
                         />
+                        {errors[`stayer_${index}_email`] && <p className="text-red-400 text-[9px] mt-0.5 font-bold">{errors[`stayer_${index}_email`]}</p>}
                       </div>
                     </div>
                   ))}

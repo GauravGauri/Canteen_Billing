@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { useHotelStore } from '../store/useHotelStore';
 import { Building, Plus, Percent, RefreshCw } from 'lucide-react';
+import { validateMinLength, validatePhone, validateEmail } from '../utils/validation';
 
 const Agents = () => {
   const { agents, fetchAgents, createAgent } = useHotelStore();
@@ -14,6 +15,7 @@ const Agents = () => {
   const [phone, setPhone] = useState('');
   const [commissionRate, setCommissionRate] = useState('');
   const [corporateRateDetails, setCorporateRateDetails] = useState('');
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     fetchAgents();
@@ -21,7 +23,37 @@ const Agents = () => {
 
   const handleCreateAgent = async (e) => {
     e.preventDefault();
-    if (!agentName || !code) return;
+    const newErrors = {};
+
+    if (!validateMinLength(agentName, 2)) {
+      newErrors.agentName = 'Agent Name must be at least 2 characters';
+    }
+
+    if (!validateMinLength(code, 2)) {
+      newErrors.code = 'Partner Code must be at least 2 characters';
+    }
+
+    if (email && !validateEmail(email)) {
+      newErrors.email = 'Enter a valid email address';
+    }
+
+    if (phone && !validatePhone(phone)) {
+      newErrors.phone = 'Enter valid phone number (7-15 digits)';
+    }
+
+    if (commissionRate) {
+      const rate = Number(commissionRate);
+      if (isNaN(rate) || rate < 0 || rate > 100) {
+        newErrors.commissionRate = 'Commission Margin must be a percentage between 0 and 100';
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     const ok = await createAgent({
       agentName,
       code,
@@ -37,6 +69,7 @@ const Agents = () => {
       setPhone('');
       setCommissionRate('');
       setCorporateRateDetails('');
+      setErrors({});
       setShowAddAgent(false);
     }
   };
@@ -126,6 +159,7 @@ const Agents = () => {
                     onChange={(e) => setAgentName(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
                   />
+                  {errors.agentName && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.agentName}</p>}
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Partner Code</label>
@@ -137,6 +171,7 @@ const Agents = () => {
                     onChange={(e) => setCode(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
                   />
+                  {errors.code && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.code}</p>}
                 </div>
               </div>
 
@@ -150,6 +185,7 @@ const Agents = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
                   />
+                  {errors.email && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.email}</p>}
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Phone</label>
@@ -160,6 +196,7 @@ const Agents = () => {
                     onChange={(e) => setPhone(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
                   />
+                  {errors.phone && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.phone}</p>}
                 </div>
               </div>
 
@@ -172,6 +209,7 @@ const Agents = () => {
                   onChange={(e) => setCommissionRate(e.target.value)}
                   className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
                 />
+                {errors.commissionRate && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.commissionRate}</p>}
               </div>
 
               <div className="space-y-1">
@@ -187,7 +225,16 @@ const Agents = () => {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowAddAgent(false)}
+                  onClick={() => {
+                    setAgentName('');
+                    setCode('');
+                    setEmail('');
+                    setPhone('');
+                    setCommissionRate('');
+                    setCorporateRateDetails('');
+                    setErrors({});
+                    setShowAddAgent(false);
+                  }}
                   className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-355 text-xs font-semibold cursor-pointer"
                 >
                   Cancel

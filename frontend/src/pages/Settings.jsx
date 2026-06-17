@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar';
 import axios from 'axios';
 import { useHotelStore } from '../store/useHotelStore';
 import { Settings, Sliders, DollarSign, Percent, ShieldCheck, Mail, Smartphone, Building } from 'lucide-react';
+import { validateMinLength, validatePhone, validateEmail } from '../utils/validation';
 
 const SettingsPage = () => {
   const { settings, fetchSettings, updateSettings } = useHotelStore();
@@ -18,6 +19,7 @@ const SettingsPage = () => {
   const [currencySymbol, setCurrencySymbol] = useState('$');
   const [taxRate, setTaxRate] = useState(12);
   const [serviceChargeRate, setServiceChargeRate] = useState(5);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     fetchSettings();
@@ -59,6 +61,36 @@ const SettingsPage = () => {
 
   const handleSaveSettings = async (e) => {
     e.preventDefault();
+
+    // Validate fields
+    const newErrors = {};
+    if (!validateMinLength(hotelName, 2)) {
+      newErrors.hotelName = 'Resort/Hotel name must be at least 2 characters.';
+    }
+    if (!validateEmail(email)) {
+      newErrors.email = 'Please enter a valid contact email.';
+    }
+    if (!validatePhone(phone)) {
+      newErrors.phone = 'Please enter a valid phone number (7-15 digits).';
+    }
+    if (!validateMinLength(address, 5)) {
+      newErrors.address = 'Street address must be at least 5 characters.';
+    }
+    const taxVal = Number(taxRate);
+    if (isNaN(taxVal) || taxVal < 0 || taxVal > 100) {
+      newErrors.taxRate = 'Tax rate must be between 0% and 100%.';
+    }
+    const serviceVal = Number(serviceChargeRate);
+    if (isNaN(serviceVal) || serviceVal < 0 || serviceVal > 100) {
+      newErrors.serviceChargeRate = 'Service charge rate must be between 0% and 100%.';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     setLoading(true);
     await updateSettings({
       hotelName,
@@ -93,44 +125,64 @@ const SettingsPage = () => {
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Resort/Hotel Name</label>
                 <input
                   type="text"
-                  required
                   value={hotelName}
-                  onChange={(e) => setHotelName(e.target.value)}
+                  onChange={(e) => {
+                    setHotelName(e.target.value);
+                    if (errors.hotelName) setErrors(prev => ({ ...prev, hotelName: '' }));
+                  }}
                   className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:outline-none"
                 />
+                {errors.hotelName && (
+                  <div className="text-red-400 text-[10px] mt-0.5 font-bold pl-1">{errors.hotelName}</div>
+                )}
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Contact Email Address</label>
                 <input
                   type="email"
-                  required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
+                  }}
                   className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:outline-none"
                 />
+                {errors.email && (
+                  <div className="text-red-400 text-[10px] mt-0.5 font-bold pl-1">{errors.email}</div>
+                )}
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Resort Hotline Phone</label>
                 <input
                   type="text"
-                  required
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    if (errors.phone) setErrors(prev => ({ ...prev, phone: '' }));
+                  }}
                   className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:outline-none"
                 />
+                {errors.phone && (
+                  <div className="text-red-400 text-[10px] mt-0.5 font-bold pl-1">{errors.phone}</div>
+                )}
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Street Address Location</label>
                 <input
                   type="text"
-                  required
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={(e) => {
+                    setAddress(e.target.value);
+                    if (errors.address) setErrors(prev => ({ ...prev, address: '' }));
+                  }}
                   className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:outline-none"
                 />
+                {errors.address && (
+                  <div className="text-red-400 text-[10px] mt-0.5 font-bold pl-1">{errors.address}</div>
+                )}
               </div>
             </div>
           </div>
@@ -168,9 +220,15 @@ const SettingsPage = () => {
                 <input
                   type="number"
                   value={taxRate}
-                  onChange={(e) => setTaxRate(e.target.value)}
+                  onChange={(e) => {
+                    setTaxRate(e.target.value);
+                    if (errors.taxRate) setErrors(prev => ({ ...prev, taxRate: '' }));
+                  }}
                   className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:outline-none"
                 />
+                {errors.taxRate && (
+                  <div className="text-red-400 text-[10px] mt-0.5 font-bold pl-1">{errors.taxRate}</div>
+                )}
               </div>
 
               <div className="space-y-1">
@@ -178,9 +236,15 @@ const SettingsPage = () => {
                 <input
                   type="number"
                   value={serviceChargeRate}
-                  onChange={(e) => setServiceChargeRate(e.target.value)}
+                  onChange={(e) => {
+                    setServiceChargeRate(e.target.value);
+                    if (errors.serviceChargeRate) setErrors(prev => ({ ...prev, serviceChargeRate: '' }));
+                  }}
                   className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:outline-none"
                 />
+                {errors.serviceChargeRate && (
+                  <div className="text-red-400 text-[10px] mt-0.5 font-bold pl-1">{errors.serviceChargeRate}</div>
+                )}
               </div>
             </div>
           </div>

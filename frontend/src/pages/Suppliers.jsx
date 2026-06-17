@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useHotelStore } from '../store/useHotelStore';
 import { Users, Plus, Edit2, Phone, Mail, Star, DollarSign } from 'lucide-react';
+import { validateMinLength, validatePhone, validateEmail, validateNonNegativeNumber } from '../utils/validation';
 
 const Suppliers = () => {
   const { suppliers, fetchSuppliers, createSupplier, updateSupplier, loading } = useHotelStore();
@@ -17,6 +18,7 @@ const Suppliers = () => {
   const [address, setAddress] = useState('');
   const [vendorRating, setVendorRating] = useState(5);
   const [paymentDueAmount, setPaymentDueAmount] = useState(0);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     fetchSuppliers();
@@ -32,6 +34,7 @@ const Suppliers = () => {
     setAddress('');
     setVendorRating(5);
     setPaymentDueAmount(0);
+    setErrors({});
     setShowAddModal(true);
   };
 
@@ -45,12 +48,44 @@ const Suppliers = () => {
     setAddress(sup.address);
     setVendorRating(sup.vendorRating || 5);
     setPaymentDueAmount(sup.paymentDueAmount || 0);
+    setErrors({});
     setShowAddModal(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!supplierName) return;
+
+    // Validate fields
+    const newErrors = {};
+    if (!validateMinLength(supplierName, 3)) {
+      newErrors.supplierName = 'Supplier name must be at least 3 characters.';
+    }
+    if (!validateMinLength(contactName, 2)) {
+      newErrors.contactName = 'Contact person name must be at least 2 characters.';
+    }
+    if (!validatePhone(phone)) {
+      newErrors.phone = 'Please enter a valid phone number (7-15 digits).';
+    }
+    if (!validateEmail(email)) {
+      newErrors.email = 'Please enter a valid email address.';
+    }
+    if (!validateMinLength(address, 5)) {
+      newErrors.address = 'Street address must be at least 5 characters.';
+    }
+    const rVal = Number(vendorRating);
+    if (isNaN(rVal) || rVal < 1 || rVal > 5) {
+      newErrors.vendorRating = 'Rating must be between 1.0 and 5.0.';
+    }
+    if (!validateNonNegativeNumber(paymentDueAmount)) {
+      newErrors.paymentDueAmount = 'Dues outstanding must be a non-negative number.';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
 
     const payload = {
       supplierName,
@@ -165,44 +200,87 @@ const Suppliers = () => {
               {isEditing ? 'Modify Supplier Profile' : 'Register New Vendor'}
             </h3>
             <div className="space-y-3">
-              <input
-                type="text"
-                placeholder="Vendor Business Name"
-                required
-                value={supplierName}
-                onChange={(e) => setSupplierName(e.target.value)}
-                className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
-              />
-              <input
-                type="text"
-                placeholder="Contact Person Name"
-                value={contactName}
-                onChange={(e) => setContactName(e.target.value)}
-                className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
-              />
-              <div className="grid grid-cols-2 gap-3">
+              <div>
                 <input
                   type="text"
-                  placeholder="Phone Number"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Vendor Business Name"
+                  value={supplierName}
+                  onChange={(e) => {
+                    setSupplierName(e.target.value);
+                    if (errors.supplierName) setErrors(prev => ({ ...prev, supplierName: '' }));
+                  }}
                   className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
                 />
-                <input
-                  type="email"
-                  placeholder="Email Address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
-                />
+                {errors.supplierName && (
+                  <div className="text-red-400 text-[10px] mt-0.5 font-bold pl-1">{errors.supplierName}</div>
+                )}
               </div>
-              <input
-                type="text"
-                placeholder="Vendor Street Address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
-              />
+
+              <div>
+                <input
+                  type="text"
+                  placeholder="Contact Person Name"
+                  value={contactName}
+                  onChange={(e) => {
+                    setContactName(e.target.value);
+                    if (errors.contactName) setErrors(prev => ({ ...prev, contactName: '' }));
+                  }}
+                  className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
+                />
+                {errors.contactName && (
+                  <div className="text-red-400 text-[10px] mt-0.5 font-bold pl-1">{errors.contactName}</div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Phone Number"
+                    value={phone}
+                    onChange={(e) => {
+                      setPhone(e.target.value);
+                      if (errors.phone) setErrors(prev => ({ ...prev, phone: '' }));
+                    }}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
+                  />
+                  {errors.phone && (
+                    <div className="text-red-400 text-[10px] mt-0.5 font-bold pl-1">{errors.phone}</div>
+                  )}
+                </div>
+                <div>
+                  <input
+                    type="email"
+                    placeholder="Email Address"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
+                    }}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
+                  />
+                  {errors.email && (
+                    <div className="text-red-400 text-[10px] mt-0.5 font-bold pl-1">{errors.email}</div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <input
+                  type="text"
+                  placeholder="Vendor Street Address"
+                  value={address}
+                  onChange={(e) => {
+                    setAddress(e.target.value);
+                    if (errors.address) setErrors(prev => ({ ...prev, address: '' }));
+                  }}
+                  className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
+                />
+                {errors.address && (
+                  <div className="text-red-400 text-[10px] mt-0.5 font-bold pl-1">{errors.address}</div>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Rating (1 to 5)</label>
@@ -211,9 +289,15 @@ const Suppliers = () => {
                     min="1"
                     max="5"
                     value={vendorRating}
-                    onChange={(e) => setVendorRating(e.target.value)}
+                    onChange={(e) => {
+                      setVendorRating(e.target.value);
+                      if (errors.vendorRating) setErrors(prev => ({ ...prev, vendorRating: '' }));
+                    }}
                     className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
                   />
+                  {errors.vendorRating && (
+                    <div className="text-red-400 text-[10px] mt-0.5 font-bold pl-1">{errors.vendorRating}</div>
+                  )}
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Dues Outstanding ($)</label>
@@ -221,16 +305,22 @@ const Suppliers = () => {
                     type="number"
                     min="0"
                     value={paymentDueAmount}
-                    onChange={(e) => setPaymentDueAmount(e.target.value)}
+                    onChange={(e) => {
+                      setPaymentDueAmount(e.target.value);
+                      if (errors.paymentDueAmount) setErrors(prev => ({ ...prev, paymentDueAmount: '' }));
+                    }}
                     className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
                   />
+                  {errors.paymentDueAmount && (
+                    <div className="text-red-400 text-[10px] mt-0.5 font-bold pl-1">{errors.paymentDueAmount}</div>
+                  )}
                 </div>
               </div>
             </div>
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setShowAddModal(false)}
+                onClick={() => { setShowAddModal(false); setErrors({}); }}
                 className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-350 text-xs font-semibold cursor-pointer"
               >
                 Cancel

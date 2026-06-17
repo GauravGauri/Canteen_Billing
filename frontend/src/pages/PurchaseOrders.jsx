@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useHotelStore } from '../store/useHotelStore';
 import { ShoppingBag, Plus, Calendar, FileText, ChevronDown, CheckCircle } from 'lucide-react';
+import { validatePositiveNumber } from '../utils/validation';
 
 const PurchaseOrders = () => {
   const { purchaseOrders, suppliers, inventory, fetchPurchaseOrders, fetchSuppliers, fetchInventory, createPurchaseOrder, updatePurchaseOrder } = useHotelStore();
@@ -11,6 +12,7 @@ const PurchaseOrders = () => {
   const [supplierId, setSupplierId] = useState('');
   const [selectedItems, setSelectedItems] = useState([{ productId: '', quantity: 1, purchasePrice: 0 }]);
   const [notes, setNotes] = useState('');
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     fetchPurchaseOrders();
@@ -39,7 +41,42 @@ const PurchaseOrders = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!supplierId || selectedItems.length === 0) return;
+    
+    const newErrors = {};
+    if (!supplierId) {
+      newErrors.supplierId = 'Supplier selection is required.';
+    }
+
+    if (selectedItems.length === 0) {
+      newErrors.items = 'Please add at least one item.';
+    } else {
+      const itemErrors = [];
+      selectedItems.forEach((item, idx) => {
+        const rowErr = {};
+        if (!item.productId) {
+          rowErr.productId = 'Product required.';
+        }
+        if (!validatePositiveNumber(item.quantity) || Number(item.quantity) < 1) {
+          rowErr.quantity = 'Qty must be >= 1.';
+        }
+        if (!validatePositiveNumber(item.purchasePrice)) {
+          rowErr.purchasePrice = 'Price must be positive.';
+        }
+        if (Object.keys(rowErr).length > 0) {
+          itemErrors[idx] = rowErr;
+        }
+      });
+      if (itemErrors.length > 0) {
+        newErrors.items = itemErrors;
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
 
     // Calculate total amount
     const items = selectedItems.map(i => ({
@@ -60,6 +97,7 @@ const PurchaseOrders = () => {
       setSupplierId('');
       setSelectedItems([{ productId: '', quantity: 1, purchasePrice: 0 }]);
       setNotes('');
+      setErrors({});
       setShowAddModal(false);
       fetchPurchaseOrders();
       fetchInventory(); // stock increments on PO delivery
@@ -170,9 +208,11 @@ const PurchaseOrders = () => {
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Choose Supplier Partner</label>
               <select
-                required
                 value={supplierId}
-                onChange={(e) => setSupplierId(e.target.value)}
+                onChange={(e) => {
+                  setSupplierId(e.target.value);
+                  if (errors.supplierId) setErrors(prev => ({ ...prev, supplierId: '' }));
+                }}
                 className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
               >
                 <option value="">-- Select Supplier --</option>
@@ -180,6 +220,9 @@ const PurchaseOrders = () => {
                   <option key={s._id} value={s._id}>{s.supplierName}</option>
                 ))}
               </select>
+              {errors.supplierId && (
+                <div className="text-red-400 text-[10px] mt-0.5 font-bold pl-1">{errors.supplierId}</div>
+              )}
             </div>
 
             {/* Selected items grid */}
@@ -195,41 +238,65 @@ const PurchaseOrders = () => {
                 </button>
               </div>
 
+              {errors.items && typeof errors.items === 'string' && (
+                <div className="text-red-400 text-[10px] font-bold pl-1">{errors.items}</div>
+              )}
+
               <div className="space-y-2 max-h-36 overflow-y-auto">
                 {selectedItems.map((item, idx) => (
-                  <div key={idx} className="grid grid-cols-12 gap-2">
-                    <select
-                      required
-                      value={item.productId}
-                      onChange={(e) => handleItemRowChange(idx, 'productId', e.target.value)}
-                      className="col-span-6 px-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-[10px] text-slate-200 focus:outline-none"
-                    >
-                      <option value="">-- Choose Item --</option>
-                      {inventory.map(p => (
-                        <option key={p._id} value={p._id}>{p.name}</option>
-                      ))}
-                    </select>
+                  <div key={idx} className="space-y-1">
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-6">
+                        <select
+                          value={item.productId}
+                          onChange={(e) => {
+                            handleItemRowChange(idx, 'productId', e.target.value);
+                            if (errors.items) setErrors(prev => ({ ...prev, items: null }));
+                          }}
+                          className="w-full px-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-[10px] text-slate-200 focus:outline-none"
+                        >
+                          <option value="">-- Choose Item --</option>
+                          {inventory.map(p => (
+                            <option key={p._id} value={p._id}>{p.name}</option>
+                          ))}
+                        </select>
+                        {errors.items && Array.isArray(errors.items) && errors.items[idx]?.productId && (
+                          <div className="text-red-400 text-[9px] mt-0.5 font-bold">{errors.items[idx].productId}</div>
+                        )}
+                      </div>
 
-                    <input
-                      type="number"
-                      required
-                      min="1"
-                      placeholder="Qty"
-                      value={item.quantity}
-                      onChange={(e) => handleItemRowChange(idx, 'quantity', e.target.value)}
-                      className="col-span-3 px-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-[10px] text-slate-200 focus:outline-none"
-                    />
+                      <div className="col-span-3">
+                        <input
+                          type="number"
+                          placeholder="Qty"
+                          value={item.quantity}
+                          onChange={(e) => {
+                            handleItemRowChange(idx, 'quantity', e.target.value);
+                            if (errors.items) setErrors(prev => ({ ...prev, items: null }));
+                          }}
+                          className="w-full px-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-[10px] text-slate-200 focus:outline-none"
+                        />
+                        {errors.items && Array.isArray(errors.items) && errors.items[idx]?.quantity && (
+                          <div className="text-red-400 text-[9px] mt-0.5 font-bold">{errors.items[idx].quantity}</div>
+                        )}
+                      </div>
 
-                    <input
-                      type="number"
-                      required
-                      min="0"
-                      step="0.01"
-                      placeholder="Price"
-                      value={item.purchasePrice}
-                      onChange={(e) => handleItemRowChange(idx, 'purchasePrice', e.target.value)}
-                      className="col-span-3 px-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-[10px] text-slate-200 focus:outline-none"
-                    />
+                      <div className="col-span-3">
+                        <input
+                          type="number"
+                          placeholder="Price"
+                          value={item.purchasePrice}
+                          onChange={(e) => {
+                            handleItemRowChange(idx, 'purchasePrice', e.target.value);
+                            if (errors.items) setErrors(prev => ({ ...prev, items: null }));
+                          }}
+                          className="w-full px-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-[10px] text-slate-200 focus:outline-none"
+                        />
+                        {errors.items && Array.isArray(errors.items) && errors.items[idx]?.purchasePrice && (
+                          <div className="text-red-400 text-[9px] mt-0.5 font-bold">{errors.items[idx].purchasePrice}</div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -248,7 +315,7 @@ const PurchaseOrders = () => {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setShowAddModal(false)}
+                onClick={() => { setShowAddModal(false); setErrors({}); }}
                 className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-350 text-xs font-semibold cursor-pointer"
               >
                 Cancel

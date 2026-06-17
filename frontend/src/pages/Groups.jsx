@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar';
 import { useHotelStore } from '../store/useHotelStore';
 import { Users, Plus, CheckSquare, Calendar, Building, Sparkles } from 'lucide-react';
 import DatePicker from '../components/DatePicker';
+import { validateMinLength, validatePositiveNumber } from '../utils/validation';
 
 const Groups = () => {
   const { groups, rooms, guests, fetchGroups, fetchRooms, fetchGuests, createGroup } = useHotelStore();
@@ -18,6 +19,7 @@ const Groups = () => {
   const [splitDetails, setSplitDetails] = useState('');
   const [totalAmount, setTotalAmount] = useState('');
   const [notes, setNotes] = useState('');
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     fetchGroups();
@@ -35,7 +37,40 @@ const Groups = () => {
 
   const handleCreateGroup = async (e) => {
     e.preventDefault();
-    if (!groupName || !contactGuestId || roomsBlocked.length === 0 || !checkInDate || !checkOutDate) return;
+    const newErrors = {};
+
+    if (!validateMinLength(groupName, 3)) {
+      newErrors.groupName = 'Group Name must be at least 3 characters';
+    }
+
+    if (!contactGuestId) {
+      newErrors.contactGuestId = 'Master Contact Guest selection is required';
+    }
+
+    if (!checkInDate) {
+      newErrors.checkInDate = 'Check-in date is required';
+    }
+
+    if (!checkOutDate) {
+      newErrors.checkOutDate = 'Check-out date is required';
+    } else if (checkInDate && checkOutDate <= checkInDate) {
+      newErrors.checkOutDate = 'Check-out must be after Check-in';
+    }
+
+    if (roomsBlocked.length === 0) {
+      newErrors.roomsBlocked = 'Please select at least one room to block';
+    }
+
+    if (totalAmount && !validatePositiveNumber(totalAmount)) {
+      newErrors.totalAmount = 'Estimated value must be a valid positive number';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     const ok = await createGroup({
       groupName,
       contactGuestId,
@@ -57,6 +92,7 @@ const Groups = () => {
       setSplitDetails('');
       setTotalAmount('');
       setNotes('');
+      setErrors({});
       setShowAddGroup(false);
     }
   };
@@ -153,6 +189,7 @@ const Groups = () => {
                     onChange={(e) => setGroupName(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
                   />
+                  {errors.groupName && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.groupName}</p>}
                 </div>
                 
                 <div className="space-y-1">
@@ -168,24 +205,31 @@ const Groups = () => {
                       <option key={g._id} value={g._id}>{g.name}</option>
                     ))}
                   </select>
+                  {errors.contactGuestId && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.contactGuestId}</p>}
                 </div>
               </div>
 
               {/* Date pickers */}
               <div className="grid grid-cols-2 gap-3">
-                <DatePicker
-                  label="Check-In"
-                  required
-                  value={checkInDate}
-                  onChange={(val) => setCheckInDate(val)}
-                />
-                <DatePicker
-                  label="Check-Out"
-                  required
-                  value={checkOutDate}
-                  onChange={(val) => setCheckOutDate(val)}
-                  minDate={checkInDate}
-                />
+                <div>
+                  <DatePicker
+                    label="Check-In"
+                    required
+                    value={checkInDate}
+                    onChange={(val) => setCheckInDate(val)}
+                  />
+                  {errors.checkInDate && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.checkInDate}</p>}
+                </div>
+                <div>
+                  <DatePicker
+                    label="Check-Out"
+                    required
+                    value={checkOutDate}
+                    onChange={(val) => setCheckOutDate(val)}
+                    minDate={checkInDate}
+                  />
+                  {errors.checkOutDate && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.checkOutDate}</p>}
+                </div>
               </div>
 
               {/* Rooms Multi-Select Checklist */}
@@ -213,6 +257,7 @@ const Groups = () => {
                     <span className="text-[10px] text-slate-500 col-span-4 text-center">No available rooms.</span>
                   )}
                 </div>
+                {errors.roomsBlocked && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.roomsBlocked}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -236,6 +281,7 @@ const Groups = () => {
                     onChange={(e) => setTotalAmount(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
                   />
+                  {errors.totalAmount && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.totalAmount}</p>}
                 </div>
               </div>
 
@@ -252,15 +298,26 @@ const Groups = () => {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowAddGroup(false)}
+                  onClick={() => {
+                    setGroupName('');
+                    setContactGuestId('');
+                    setRoomsBlocked([]);
+                    setCheckInDate('');
+                    setCheckOutDate('');
+                    setMasterBilling(true);
+                    setSplitDetails('');
+                    setTotalAmount('');
+                    setNotes('');
+                    setErrors({});
+                    setShowAddGroup(false);
+                  }}
                   className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-350 text-xs font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={roomsBlocked.length === 0}
-                  className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl cursor-pointer"
                 >
                   Confirm Block
                 </button>

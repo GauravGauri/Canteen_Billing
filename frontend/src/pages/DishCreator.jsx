@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import { Plus, Edit2, Trash2, Search, BookOpen, Layers, X, PlusCircle, MinusCircle } from 'lucide-react';
+import { validateMinLength, validatePositiveNumber } from '../utils/validation';
 
 const DishCreator = () => {
   const [dishes, setDishes] = useState([]);
@@ -25,6 +26,7 @@ const DishCreator = () => {
   const [ingredientQty, setIngredientQty] = useState(0);
 
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     fetchDishes();
@@ -78,6 +80,7 @@ const DishCreator = () => {
       setSelectedProductId(products[0]._id);
     }
     setIngredientQty(0);
+    setErrors({});
     setIsModalOpen(true);
   };
 
@@ -99,6 +102,7 @@ const DishCreator = () => {
     }));
 
     setRecipeItems(mappedRecipe);
+    setErrors({});
     setIsModalOpen(true);
   };
 
@@ -137,10 +141,25 @@ const DishCreator = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name || price <= 0 || !category) {
-      showMsg('error', 'Name, Price and Category are required');
+
+    // Validate fields
+    const newErrors = {};
+    if (!validateMinLength(name, 3)) {
+      newErrors.name = 'Dish name must be at least 3 characters.';
+    }
+    if (!validatePositiveNumber(price)) {
+      newErrors.price = 'Selling price must be a positive number.';
+    }
+    if (!validateMinLength(category, 1)) {
+      newErrors.category = 'Category selection is required.';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
+
+    setErrors({});
 
     try {
       // Map recipeItems back to schemas format
@@ -312,7 +331,7 @@ const DishCreator = () => {
               <h3 className="font-bold text-slate-100 text-base">
                 {isEditing ? 'Edit Dish & Recipe Details' : 'Create Dish & Link Recipe'}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-200">
+              <button onClick={() => { setIsModalOpen(false); setErrors({}); }} className="text-slate-400 hover:text-slate-200">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -325,10 +344,16 @@ const DishCreator = () => {
                   <input
                     type="text"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      if (errors.name) setErrors(prev => ({ ...prev, name: '' }));
+                    }}
                     placeholder="e.g. Butter Chicken, Mango Shake"
                     className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
+                  {errors.name && (
+                    <div className="text-red-400 text-[10px] mt-0.5 font-bold pl-1">{errors.name}</div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -338,16 +363,25 @@ const DishCreator = () => {
                       type="number"
                       min="0"
                       value={price}
-                      onChange={(e) => setPrice(Math.max(0, Number(e.target.value)))}
+                      onChange={(e) => {
+                        setPrice(Math.max(0, Number(e.target.value)));
+                        if (errors.price) setErrors(prev => ({ ...prev, price: '' }));
+                      }}
                       className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                     />
+                    {errors.price && (
+                      <div className="text-red-400 text-[10px] mt-0.5 font-bold pl-1">{errors.price}</div>
+                    )}
                   </div>
 
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Category</label>
                     <select
                       value={category}
-                      onChange={(e) => setCategory(e.target.value)}
+                      onChange={(e) => {
+                        setCategory(e.target.value);
+                        if (errors.category) setErrors(prev => ({ ...prev, category: '' }));
+                      }}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-300"
                     >
                       <option value="Starters">Starters</option>
@@ -355,6 +389,9 @@ const DishCreator = () => {
                       <option value="Desserts">Desserts</option>
                       <option value="Beverages">Beverages</option>
                     </select>
+                    {errors.category && (
+                      <div className="text-red-400 text-[10px] mt-0.5 font-bold pl-1">{errors.category}</div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -477,7 +514,7 @@ const DishCreator = () => {
               <div className="flex gap-3 pt-4 border-t border-slate-800/80">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => { setIsModalOpen(false); setErrors({}); }}
                   className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-medium text-sm hover:bg-slate-850"
                 >
                   Cancel

@@ -19,6 +19,7 @@ const Settings = lazy(() => import('./pages/Settings'));
 const Inventory = lazy(() => import('./pages/Inventory'));
 const Suppliers = lazy(() => import('./pages/Suppliers'));
 const PurchaseOrders = lazy(() => import('./pages/PurchaseOrders'));
+const DishCreator = lazy(() => import('./pages/DishCreator'));
 
 // Modern, sleek loading spinner aligned with App UI theme
 const PageLoader = () => (
@@ -66,6 +67,7 @@ const App = () => {
                 <Route path="/inventory" element={<Inventory />} />
                 <Route path="/suppliers" element={<Suppliers />} />
                 <Route path="/purchase-orders" element={<PurchaseOrders />} />
+                <Route path="/dish-creator" element={<DishCreator />} />
                 
                 <Route path="/settings" element={<Settings />} />
               </Route>

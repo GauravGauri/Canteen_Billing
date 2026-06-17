@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useHotelStore } from '../store/useHotelStore';
 import { Plus, Edit2, Trash2, Search, AlertTriangle, CheckCircle, Package } from 'lucide-react';
+import { validateMinLength, validatePositiveNumber, validateNonNegativeNumber } from '../utils/validation';
 
 const Inventory = () => {
   const { inventory, fetchInventory, createInventoryItem, updateInventoryItem, loading, message } = useHotelStore();
@@ -16,6 +17,7 @@ const Inventory = () => {
   const [stockQuantity, setStockQuantity] = useState(0);
   const [minStockLevel, setMinStockLevel] = useState(5);
   const [costPrice, setCostPrice] = useState(0);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     fetchInventory();
@@ -29,6 +31,7 @@ const Inventory = () => {
     setStockQuantity(0);
     setMinStockLevel(5);
     setCostPrice(0);
+    setErrors({});
     setIsModalOpen(true);
   };
 
@@ -40,12 +43,37 @@ const Inventory = () => {
     setStockQuantity(product.stockQuantity);
     setMinStockLevel(product.minStockLevel);
     setCostPrice(product.costPrice);
+    setErrors({});
     setIsModalOpen(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name || !unit) return;
+
+    // Validate fields
+    const newErrors = {};
+    if (!validateMinLength(name, 2)) {
+      newErrors.name = 'Item name must be at least 2 characters.';
+    }
+    if (!validateMinLength(unit, 1)) {
+      newErrors.unit = 'Unit of measure is required.';
+    }
+    if (!validatePositiveNumber(costPrice)) {
+      newErrors.costPrice = 'Cost price must be a positive number.';
+    }
+    if (!validateNonNegativeNumber(stockQuantity)) {
+      newErrors.stockQuantity = 'Stock quantity must be a non-negative number.';
+    }
+    if (!validateNonNegativeNumber(minStockLevel)) {
+      newErrors.minStockLevel = 'Min stock alert level must be a non-negative number.';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
 
     const payload = {
       name,
@@ -206,7 +234,7 @@ const Inventory = () => {
               <h3 className="font-bold text-slate-100 text-sm">
                 {isEditing ? 'Edit Stock Details' : 'Add New Stock Product'}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-200 cursor-pointer">
+              <button onClick={() => { setIsModalOpen(false); setErrors({}); }} className="text-slate-400 hover:text-slate-200 cursor-pointer">
                 <Plus className="w-5 h-5 rotate-45" />
               </button>
             </div>
@@ -217,10 +245,16 @@ const Inventory = () => {
                 <input
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (errors.name) setErrors(prev => ({ ...prev, name: '' }));
+                  }}
                   placeholder="e.g. Linen Bed Sheets, Coffee Beans"
                   className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
                 />
+                {errors.name && (
+                  <div className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.name}</div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -229,10 +263,16 @@ const Inventory = () => {
                   <input
                     type="text"
                     value={unit}
-                    onChange={(e) => setUnit(e.target.value)}
+                    onChange={(e) => {
+                      setUnit(e.target.value);
+                      if (errors.unit) setErrors(prev => ({ ...prev, unit: '' }));
+                    }}
                     placeholder="e.g. units, kg, liters"
                     className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
                   />
+                  {errors.unit && (
+                    <div className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.unit}</div>
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -242,9 +282,15 @@ const Inventory = () => {
                     min="0"
                     step="0.01"
                     value={costPrice}
-                    onChange={(e) => setCostPrice(Math.max(0, Number(e.target.value)))}
+                    onChange={(e) => {
+                      setCostPrice(Math.max(0, Number(e.target.value)));
+                      if (errors.costPrice) setErrors(prev => ({ ...prev, costPrice: '' }));
+                    }}
                     className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
                   />
+                  {errors.costPrice && (
+                    <div className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.costPrice}</div>
+                  )}
                 </div>
               </div>
 
@@ -256,9 +302,15 @@ const Inventory = () => {
                     min="0"
                     step="0.01"
                     value={stockQuantity}
-                    onChange={(e) => setStockQuantity(Math.max(0, Number(e.target.value)))}
+                    onChange={(e) => {
+                      setStockQuantity(Math.max(0, Number(e.target.value)));
+                      if (errors.stockQuantity) setErrors(prev => ({ ...prev, stockQuantity: '' }));
+                    }}
                     className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
                   />
+                  {errors.stockQuantity && (
+                    <div className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.stockQuantity}</div>
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -268,16 +320,22 @@ const Inventory = () => {
                     min="0"
                     step="0.01"
                     value={minStockLevel}
-                    onChange={(e) => setMinStockLevel(Math.max(0, Number(e.target.value)))}
+                    onChange={(e) => {
+                      setMinStockLevel(Math.max(0, Number(e.target.value)));
+                      if (errors.minStockLevel) setErrors(prev => ({ ...prev, minStockLevel: '' }));
+                    }}
                     className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
                   />
+                  {errors.minStockLevel && (
+                    <div className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.minStockLevel}</div>
+                  )}
                 </div>
               </div>
 
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => { setIsModalOpen(false); setErrors({}); }}
                   className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-350 text-xs font-semibold hover:bg-slate-850 cursor-pointer"
                 >
                   Cancel
