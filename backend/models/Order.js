@@ -12,9 +12,19 @@ const orderSchema = new mongoose.Schema(
       ref: 'Table',
       required: false,
     },
+    roomId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Room',
+      required: false,
+    },
+    reservationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Reservation',
+      required: false,
+    },
     type: {
       type: String,
-      enum: ['dine-in', 'takeaway', 'online'],
+      enum: ['dine-in', 'takeaway', 'online', 'room-service'],
       default: 'dine-in',
     },
     items: [
@@ -65,7 +75,7 @@ const orderSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['cash', 'card', 'upi', 'unpaid'],
+      enum: ['cash', 'card', 'upi', 'room', 'unpaid'],
       default: 'unpaid',
     },
     paymentDetails: {

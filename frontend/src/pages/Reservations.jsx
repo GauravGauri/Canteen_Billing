@@ -1,0 +1,423 @@
+import React, { useEffect, useState } from 'react';
+import Navbar from '../components/Navbar';
+import axios from 'axios';
+import { useHotelStore } from '../store/useHotelStore';
+import { Calendar, UserPlus, Filter, Plus, CalendarDays, RefreshCw, DollarSign } from 'lucide-react';
+
+const Reservations = () => {
+  const {
+    reservations,
+    rooms,
+    guests,
+    fetchReservations,
+    fetchRooms,
+    fetchGuests,
+    createReservation,
+    updateReservation,
+    deleteReservation,
+  } = useHotelStore();
+
+  const [showAddBooking, setShowAddBooking] = useState(false);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [folioData, setFolioData] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+
+  // Booking Inputs
+  const [guestId, setGuestId] = useState('');
+  const [roomId, setRoomId] = useState('');
+  const [checkInDate, setCheckInDate] = useState('');
+  const [checkOutDate, setCheckOutDate] = useState('');
+  const [baseRate, setBaseRate] = useState('');
+  const [advanceDeposit, setAdvanceDeposit] = useState('');
+  const [bookingNotes, setBookingNotes] = useState('');
+
+  useEffect(() => {
+    fetchReservations();
+    fetchRooms();
+    fetchGuests();
+  }, [fetchReservations, fetchRooms, fetchGuests]);
+
+  const handleCreateBooking = async (e) => {
+    e.preventDefault();
+    if (!guestId || !roomId || !checkInDate || !checkOutDate || !baseRate) return;
+    const ok = await createReservation({
+      guestId,
+      roomId,
+      checkInDate,
+      checkOutDate,
+      baseRate: Number(baseRate),
+      advanceDeposit: Number(advanceDeposit || 0),
+      notes: bookingNotes,
+    });
+    if (ok) {
+      setGuestId('');
+      setRoomId('');
+      setCheckInDate('');
+      setCheckOutDate('');
+      setBaseRate('');
+      setAdvanceDeposit('');
+      setBookingNotes('');
+      setShowAddBooking(false);
+    }
+  };
+
+  const handleCheckIn = async (booking) => {
+    await updateReservation(booking._id, { status: 'checked_in' });
+  };
+
+  const openCheckoutFlow = async (booking) => {
+    setSelectedBooking(booking);
+    try {
+      const res = await axios.get(`/reservations/${booking._id}`);
+      if (res.data.success) {
+        setFolioData(res.data.data);
+        setShowCheckoutModal(true);
+      }
+    } catch (err) {
+      console.error('Failed to load reservation folio details', err);
+    }
+  };
+
+  const handleCheckoutSettle = async () => {
+    if (!selectedBooking) return;
+    const ok = await updateReservation(selectedBooking._id, {
+      status: 'checked_out',
+      paymentMethod,
+    });
+    if (ok) {
+      setShowCheckoutModal(false);
+      setSelectedBooking(null);
+      setFolioData(null);
+      fetchReservations();
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'pending':
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 border border-amber-500/20 text-amber-400">Reserved</span>;
+      case 'checked_in':
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold">In House</span>;
+      case 'checked_out':
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 border border-blue-500/20 text-blue-400">Checked Out</span>;
+      case 'cancelled':
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/10 border border-red-500/20 text-red-400">Cancelled</span>;
+      default:
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-400">{status}</span>;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-slate-100 pl-0 lg:pl-64">
+      <Navbar title="Reservations & Front Desk" />
+
+      <div className="p-6 max-w-[1600px] mx-auto space-y-6">
+        
+        {/* Actions Toolbar */}
+        <div className="glass-card rounded-2xl p-5 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="w-5 h-5 text-brand-400" />
+            <h2 className="text-sm font-bold text-slate-205">Booking Records</h2>
+          </div>
+          <button
+            onClick={() => setShowAddBooking(true)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors shadow-md shadow-brand-600/10"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Booking</span>
+          </button>
+        </div>
+
+        {/* Bookings Table */}
+        <div className="glass-card rounded-2xl overflow-hidden border border-slate-800">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-950 border-b border-slate-800 text-slate-400 text-[10px] font-semibold uppercase tracking-wider">
+                  <th className="px-6 py-4">Guest Name</th>
+                  <th className="px-6 py-4">Room No</th>
+                  <th className="px-6 py-4">Check-In</th>
+                  <th className="px-6 py-4">Check-Out</th>
+                  <th className="px-6 py-4">Charges</th>
+                  <th className="px-6 py-4">Advance Paid</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/50 text-slate-350">
+                {reservations.map((res) => (
+                  <tr key={res._id} className="hover:bg-slate-900/30 transition-colors">
+                    <td className="px-6 py-4 font-bold text-slate-200">{res.guestId?.name}</td>
+                    <td className="px-6 py-4 font-semibold text-brand-400">
+                      Room {res.roomId?.roomNo || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 text-slate-400">{new Date(res.checkInDate).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-slate-400">{new Date(res.checkOutDate).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 font-extrabold text-slate-205">${res.totalAmount.toFixed(2)}</td>
+                    <td className="px-6 py-4 font-semibold text-emerald-450">${res.advanceDeposit.toFixed(2)}</td>
+                    <td className="px-6 py-4">{getStatusBadge(res.status)}</td>
+                    <td className="px-6 py-4 text-right space-x-2">
+                      {res.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => handleCheckIn(res)}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[10px] cursor-pointer shadow-sm transition-all"
+                          >
+                            Check In
+                          </button>
+                          <button
+                            onClick={() => deleteReservation(res._id)}
+                            className="px-2.5 py-1.5 border border-red-500/20 hover:bg-red-500/10 text-red-400 rounded-lg text-[10px] cursor-pointer transition-all"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                      {res.status === 'checked_in' && (
+                        <button
+                          onClick={() => openCheckoutFlow(res)}
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-[10px] cursor-pointer shadow-sm transition-all"
+                        >
+                          Checkout Folio
+                        </button>
+                      )}
+                      {res.status === 'checked_out' && (
+                        <span className="text-[10px] text-slate-500 font-semibold uppercase">Settled</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+
+                {reservations.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="py-16 text-center text-slate-500 font-semibold">
+                      No reservation records found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Modal: New Booking */}
+        {showAddBooking && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-xs p-4">
+            <form onSubmit={handleCreateBooking} className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-2xl">
+              <h3 className="text-sm font-bold text-slate-200">Book Reservation</h3>
+              <div className="space-y-3">
+                
+                {/* Guest Selection */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Select Guest</label>
+                  <select
+                    required
+                    value={guestId}
+                    onChange={(e) => setGuestId(e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
+                  >
+                    <option value="">-- Choose Registered Guest --</option>
+                    {guests.map((g) => (
+                      <option key={g._id} value={g._id}>{g.name} ({g.phone})</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Room Selection */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Select Available Room</label>
+                  <select
+                    required
+                    value={roomId}
+                    onChange={(e) => setRoomId(e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
+                  >
+                    <option value="">-- Choose Available Room --</option>
+                    {rooms.filter(room => room.status === 'available').map((r) => (
+                      <option key={r._id} value={r._id}>Room {r.roomNo} - {r.categoryId?.name} (${r.categoryId?.basePrice}/night)</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Dates */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Check-In</label>
+                    <input
+                      type="date"
+                      required
+                      value={checkInDate}
+                      onChange={(e) => setCheckInDate(e.target.value)}
+                      className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Check-Out</label>
+                    <input
+                      type="date"
+                      required
+                      value={checkOutDate}
+                      onChange={(e) => setCheckOutDate(e.target.value)}
+                      className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Rates & Deposits */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Base Rate ($ per night)</label>
+                    <input
+                      type="number"
+                      required
+                      placeholder="e.g. 150"
+                      value={baseRate}
+                      onChange={(e) => setBaseRate(e.target.value)}
+                      className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Advance Deposit ($)</label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 50"
+                      value={advanceDeposit}
+                      onChange={(e) => setAdvanceDeposit(e.target.value)}
+                      className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Notes</label>
+                  <textarea
+                    placeholder="Booking notes / requests..."
+                    value={bookingNotes}
+                    onChange={(e) => setBookingNotes(e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none h-16"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddBooking(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-350 text-xs font-semibold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl cursor-pointer"
+                >
+                  Confirm Booking
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Modal: Folio Check-out Settle */}
+        {showCheckoutModal && folioData && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-xs p-4">
+            <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-2xl">
+              <div className="flex justify-between items-center border-b border-slate-850 pb-2">
+                <h3 className="text-sm font-bold text-slate-200">Consolidated Room Folio & Checkout</h3>
+                <span className="px-2 py-0.5 rounded bg-brand-500/10 border border-brand-500/20 text-brand-400 text-[10px] font-bold">
+                  Room {folioData.reservation.roomId?.roomNo}
+                </span>
+              </div>
+
+              {/* Folio Ledger details */}
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between font-medium text-slate-400">
+                  <span>Guest Profile:</span>
+                  <span className="text-slate-200">{folioData.reservation.guestId?.name}</span>
+                </div>
+                
+                <div className="space-y-1.5 bg-slate-950 p-4 rounded-xl border border-slate-850">
+                  <div className="flex justify-between text-slate-400">
+                    <span>Room Charges ({Math.ceil(Math.abs(new Date(folioData.reservation.checkOutDate) - new Date(folioData.reservation.checkInDate)) / (1000 * 3600 * 24))} nights):</span>
+                    <span className="text-slate-100 font-semibold">${folioData.reservation.totalRoomCharges.toFixed(2)}</span>
+                  </div>
+                  
+                  {/* Extra charges / POS orders */}
+                  <div className="border-t border-slate-800/60 pt-1.5 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Posted Restaurant/POS Charges</span>
+                    {folioData.postedOrders.length > 0 ? (
+                      folioData.postedOrders.map((o) => (
+                        <div key={o._id} className="flex justify-between text-slate-450 pl-2">
+                          <span>• POS {o.billNo}:</span>
+                          <span>${o.total.toFixed(2)}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <span className="text-slate-500 pl-2 italic">No restaurant charges posted.</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Summaries */}
+                <div className="space-y-1 pt-2">
+                  <div className="flex justify-between text-slate-400">
+                    <span>Subtotal:</span>
+                    <span>${(folioData.reservation.totalRoomCharges + folioData.postedOrders.reduce((s,o)=>s+o.total,0)).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-450">
+                    <span>Advance Deposit Credit:</span>
+                    <span className="text-emerald-400 font-semibold">-${folioData.reservation.advanceDeposit.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-slate-800/80 pt-2 font-bold text-slate-100 text-sm">
+                    <span>Net Balance Due:</span>
+                    <span className="text-brand-400 text-base">${Math.max(0, (folioData.reservation.totalRoomCharges + folioData.postedOrders.reduce((s,o)=>s+o.total,0) - folioData.reservation.advanceDeposit)).toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {/* Payment method */}
+                <div className="space-y-2 pt-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Settle Balance via</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['cash', 'card', 'upi'].map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setPaymentMethod(m)}
+                        className={`py-2 px-1 text-xs font-bold border rounded-xl cursor-pointer ${
+                          paymentMethod === m
+                            ? 'bg-brand-600/10 border-brand-500 text-brand-400 shadow-md shadow-brand-500/5'
+                            : 'border-slate-800 text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        {m.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowCheckoutModal(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-350 text-xs font-semibold cursor-pointer"
+                >
+                  Go Back
+                </button>
+                <button
+                  onClick={handleCheckoutSettle}
+                  className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl cursor-pointer shadow-md shadow-brand-600/10"
+                >
+                  Settle & Checkout
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+};
+
+export default Reservations;

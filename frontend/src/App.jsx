@@ -7,11 +7,16 @@ import Sidebar from './components/Sidebar';
 // Lazy load page components for route-based code splitting
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
-const POS = lazy(() => import('./pages/POS'));
-const QuickBill = lazy(() => import('./pages/QuickBill'));
-const BillingHistory = lazy(() => import('./pages/BillingHistory'));
+const POSBilling = lazy(() => import('./pages/POSBilling'));
+const POSBillHistory = lazy(() => import('./pages/POSBillHistory'));
+const PaymentReports = lazy(() => import('./pages/PaymentReports'));
+const Rooms = lazy(() => import('./pages/Rooms'));
+const Reservations = lazy(() => import('./pages/Reservations'));
+const Guests = lazy(() => import('./pages/Guests'));
+const Agents = lazy(() => import('./pages/Agents'));
+const Groups = lazy(() => import('./pages/Groups'));
+const Settings = lazy(() => import('./pages/Settings'));
 const Inventory = lazy(() => import('./pages/Inventory'));
-const DishCreator = lazy(() => import('./pages/DishCreator'));
 const Suppliers = lazy(() => import('./pages/Suppliers'));
 const PurchaseOrders = lazy(() => import('./pages/PurchaseOrders'));
 
@@ -44,17 +49,25 @@ const App = () => {
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
 
-            {/* Protected MERN Admin Routes */}
+            {/* Protected MERN Resort Routes */}
             <Route element={<ProtectedRoute />}>
               <Route element={<ProtectedLayout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/pos" element={<POS />} />
-                <Route path="/quick-bill" element={<QuickBill />} />
-                <Route path="/billing-history" element={<BillingHistory />} />
+                <Route path="/pos-billing" element={<POSBilling />} />
+                <Route path="/pos-bill-history" element={<POSBillHistory />} />
+                <Route path="/payment-reports" element={<PaymentReports />} />
+                
+                <Route path="/rooms" element={<Rooms />} />
+                <Route path="/reservations" element={<Reservations />} />
+                <Route path="/guests" element={<Guests />} />
+                <Route path="/agents" element={<Agents />} />
+                <Route path="/groups" element={<Groups />} />
+                
                 <Route path="/inventory" element={<Inventory />} />
-                <Route path="/dish-creator" element={<DishCreator />} />
                 <Route path="/suppliers" element={<Suppliers />} />
                 <Route path="/purchase-orders" element={<PurchaseOrders />} />
+                
+                <Route path="/settings" element={<Settings />} />
               </Route>
             </Route>
 

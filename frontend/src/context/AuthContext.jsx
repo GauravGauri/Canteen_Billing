@@ -79,6 +79,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const hasRole = (allowedRoles) => {
+    if (!user) return false;
+    if (user.role === 'super_admin' || user.role === 'admin') return true; // Super admin / Admin has full access
+    if (Array.isArray(allowedRoles)) {
+      return allowedRoles.includes(user.role);
+    }
+    return user.role === allowedRoles;
+  };
+
+  const roleLabels = {
+    super_admin: 'Super Admin',
+    hotel_manager: 'Hotel Manager',
+    front_desk: 'Front Desk Staff',
+    restaurant_staff: 'Restaurant Staff',
+    accountant: 'Accountant',
+    inventory_manager: 'Inventory Manager',
+    admin: 'Admin',
+  };
+
   const logout = () => {
     localStorage.removeItem('admin_token');
     setToken(null);
@@ -93,6 +112,8 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    hasRole,
+    roleLabels,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

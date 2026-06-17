@@ -1,323 +1,250 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import Navbar from '../components/Navbar';
-import { Plus, Edit2, Trash2, Search, Users, Phone, MapPin, Mail } from 'lucide-react';
+import { useHotelStore } from '../store/useHotelStore';
+import { Users, Plus, Edit2, Phone, Mail, Star, DollarSign } from 'lucide-react';
 
 const Suppliers = () => {
-  const [suppliers, setSuppliers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // Form states
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { suppliers, fetchSuppliers, createSupplier, updateSupplier, loading } = useHotelStore();
+  const [showAddModal, setShowAddModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [supplierId, setSupplierId] = useState('');
-  const [name, setName] = useState('');
-  const [contactPerson, setContactPerson] = useState('');
+
+  // Inputs
+  const [supplierName, setSupplierName] = useState('');
+  const [contactName, setContactName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
-
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const [vendorRating, setVendorRating] = useState(5);
+  const [paymentDueAmount, setPaymentDueAmount] = useState(0);
 
   useEffect(() => {
     fetchSuppliers();
-  }, []);
-
-  const fetchSuppliers = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get('/suppliers');
-      if (response.data.success) {
-        setSuppliers(response.data.data);
-      }
-    } catch (err) {
-      console.error(err);
-      showMsg('error', 'Failed to fetch suppliers list');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const showMsg = (type, text) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage({ type: '', text: '' }), 4000);
-  };
+  }, [fetchSuppliers]);
 
   const openAddModal = () => {
     setIsEditing(false);
     setSupplierId('');
-    setName('');
-    setContactPerson('');
+    setSupplierName('');
+    setContactName('');
     setPhone('');
     setEmail('');
     setAddress('');
-    setIsModalOpen(true);
+    setVendorRating(5);
+    setPaymentDueAmount(0);
+    setShowAddModal(true);
   };
 
-  const openEditModal = (supplier) => {
+  const openEditModal = (sup) => {
     setIsEditing(true);
-    setSupplierId(supplier._id);
-    setName(supplier.name);
-    setContactPerson(supplier.contactPerson || '');
-    setPhone(supplier.phone);
-    setEmail(supplier.email || '');
-    setAddress(supplier.address || '');
-    setIsModalOpen(true);
+    setSupplierId(sup._id);
+    setSupplierName(sup.supplierName);
+    setContactName(sup.contactName);
+    setPhone(sup.phone);
+    setEmail(sup.email);
+    setAddress(sup.address);
+    setVendorRating(sup.vendorRating || 5);
+    setPaymentDueAmount(sup.paymentDueAmount || 0);
+    setShowAddModal(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name || !phone) {
-      showMsg('error', 'Supplier Name and Phone are required');
-      return;
+    if (!supplierName) return;
+
+    const payload = {
+      supplierName,
+      contactName,
+      phone,
+      email,
+      address,
+      vendorRating: Number(vendorRating),
+      paymentDueAmount: Number(paymentDueAmount),
+    };
+
+    let ok;
+    if (isEditing) {
+      ok = await updateSupplier(supplierId, payload);
+    } else {
+      ok = await createSupplier(payload);
     }
 
-    try {
-      const payload = {
-        name,
-        contactPerson,
-        phone,
-        email,
-        address,
-      };
-
-      let response;
-      if (isEditing) {
-        response = await axios.put(`/suppliers/${supplierId}`, payload);
-      } else {
-        response = await axios.post('/suppliers', payload);
-      }
-
-      if (response.data.success) {
-        showMsg('success', `Supplier ${isEditing ? 'updated' : 'added'} successfully`);
-        setIsModalOpen(false);
-        fetchSuppliers();
-      }
-    } catch (err) {
-      showMsg('error', err.response?.data?.message || 'Error saving supplier');
+    if (ok) {
+      setShowAddModal(false);
+      fetchSuppliers();
     }
   };
-
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this supplier? This will not delete past purchase orders.')) {
-      try {
-        const response = await axios.delete(`/suppliers/${id}`);
-        if (response.data.success) {
-          showMsg('success', 'Supplier deleted successfully');
-          fetchSuppliers();
-        }
-      } catch (err) {
-        showMsg('error', 'Failed to delete supplier');
-      }
-    }
-  };
-
-  const filteredSuppliers = suppliers.filter((s) =>
-    s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (s.contactPerson && s.contactPerson.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 pl-0 lg:pl-64">
-      <Navbar title="Supplier Registry" />
+      <Navbar title="Supplier Directory" />
 
-      <div className="p-8 max-w-[1600px] mx-auto space-y-8">
+      <div className="p-6 max-w-[1600px] mx-auto space-y-6">
         
-        {/* Alerts */}
-        {message.text && (
-          <div className={`p-4 rounded-xl border ${
-            message.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' : 'bg-red-500/10 border-red-500/20 text-red-300'
-          }`}>
-            {message.text}
+        {/* Actions Header */}
+        <div className="glass-card rounded-2xl p-5 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-brand-400" />
+            <h2 className="text-sm font-bold text-slate-205">Registered Supplies Vendors</h2>
           </div>
-        )}
-
-        {/* Filter & Action Header */}
-        <div className="glass-card rounded-2xl p-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search suppliers..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-            />
-          </div>
-
           <button
             onClick={openAddModal}
-            className="w-full sm:w-auto px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-2 shadow shadow-brand-600/15"
+            className="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md shadow-brand-600/10 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Add Supplier</span>
           </button>
         </div>
 
-        {/* Suppliers List Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {filteredSuppliers.map((supplier) => (
-            <div key={supplier._id} className="glass-card rounded-2xl p-5 border border-slate-800/80 hover:border-slate-700/60 transition-all flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-3.5 mb-4">
-                  <div className="p-3 bg-brand-600/10 text-brand-400 rounded-xl border border-brand-500/10">
-                    <Users className="w-5 h-5" />
-                  </div>
+        {/* Suppliers Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {suppliers.map((sup) => (
+            <div
+              key={sup._id}
+              className="glass-card rounded-2xl p-5 border border-slate-800 flex flex-col justify-between hover:border-slate-750 transition-all hover:-translate-y-0.5"
+            >
+              <div className="space-y-4">
+                <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="font-bold text-slate-100 text-base leading-none">{supplier.name}</h4>
-                    {supplier.contactPerson && (
-                      <span className="text-xs text-slate-400 mt-1 block">Contact: {supplier.contactPerson}</span>
-                    )}
+                    <h3 className="font-extrabold text-slate-200 text-sm">{sup.supplierName}</h3>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">POC: {sup.contactName || 'N/A'}</p>
+                  </div>
+                  <div className="flex items-center gap-1 text-amber-450 font-bold text-xs bg-amber-500/5 px-2 py-0.5 rounded border border-amber-500/10">
+                    <Star className="w-3 h-3 fill-amber-400/20" />
+                    <span>{sup.vendorRating || 5}</span>
                   </div>
                 </div>
 
-                <div className="space-y-2 text-xs text-slate-400 border-t border-slate-800/80 pt-3.5">
-                  <div className="flex items-center gap-2.5">
-                    <Phone className="w-3.5 h-3.5 text-brand-400 shrink-0" />
-                    <span>{supplier.phone}</span>
+                {/* Contact items */}
+                <div className="space-y-1.5 text-xs text-slate-400 pt-2 border-t border-slate-850">
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-3.5 h-3.5 text-slate-500" />
+                    <span>{sup.phone || 'No Phone'}</span>
                   </div>
-                  {supplier.email && (
-                    <div className="flex items-center gap-2.5">
-                      <Mail className="w-3.5 h-3.5 text-brand-400 shrink-0" />
-                      <span className="truncate">{supplier.email}</span>
-                    </div>
-                  )}
-                  {supplier.address && (
-                    <div className="flex items-start gap-2.5">
-                      <MapPin className="w-3.5 h-3.5 text-brand-400 shrink-0 mt-0.5" />
-                      <span className="line-clamp-2 leading-relaxed">{supplier.address}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-3.5 h-3.5 text-slate-500" />
+                    <span className="truncate">{sup.email || 'No Email'}</span>
+                  </div>
+                </div>
+
+                {/* Account Dues */}
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-850 flex justify-between items-center text-xs">
+                  <span className="text-slate-400 font-medium">Pending Dues Balance:</span>
+                  <span className={`font-bold ${sup.paymentDueAmount > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
+                    ${(sup.paymentDueAmount || 0).toFixed(2)}
+                  </span>
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="flex justify-end gap-2 border-t border-slate-800/80 pt-4 mt-5">
+              <div className="flex gap-2 pt-4 mt-4 border-t border-slate-850">
                 <button
-                  onClick={() => openEditModal(supplier)}
-                  className="px-3 py-1.5 rounded-lg border border-slate-700 hover:border-slate-500 text-xs font-semibold text-slate-300 hover:bg-slate-800 transition-colors inline-flex items-center gap-1"
+                  onClick={() => openEditModal(sup)}
+                  className="w-full py-1.5 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 text-[10px] font-bold rounded-lg cursor-pointer transition-colors flex items-center justify-center gap-1"
                 >
                   <Edit2 className="w-3 h-3" />
-                  <span>Edit</span>
-                </button>
-                <button
-                  onClick={() => handleDelete(supplier._id)}
-                  className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors inline-flex"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Edit details</span>
                 </button>
               </div>
             </div>
           ))}
 
-          {filteredSuppliers.length === 0 && !loading && (
-            <div className="col-span-full py-16 text-center text-slate-500 text-sm">
-              No suppliers found. Create a supplier to map purchase orders.
-            </div>
-          )}
-
-          {loading && (
-            <div className="col-span-full py-16 text-center text-brand-400 font-semibold">
-              Loading supplier registry...
+          {suppliers.length === 0 && (
+            <div className="col-span-full py-16 text-center text-slate-500 font-semibold">
+              No vendors registered.
             </div>
           )}
         </div>
 
       </div>
 
-      {/* Supplier Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6">
-            <div className="flex justify-between items-center pb-4 border-b border-slate-800">
-              <h3 className="font-bold text-slate-100 text-base">
-                {isEditing ? 'Edit Supplier Registry' : 'Register New Vendor / Supplier'}
-              </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-200">
-                <Plus className="w-5 h-5 rotate-45" />
+      {/* Add / Edit Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-xs p-4">
+          <form onSubmit={handleSubmit} className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-2xl">
+            <h3 className="text-sm font-bold text-slate-200">
+              {isEditing ? 'Modify Supplier Profile' : 'Register New Vendor'}
+            </h3>
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Vendor Business Name"
+                required
+                value={supplierName}
+                onChange={(e) => setSupplierName(e.target.value)}
+                className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
+              />
+              <input
+                type="text"
+                placeholder="Contact Person Name"
+                value={contactName}
+                onChange={(e) => setContactName(e.target.value)}
+                className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  placeholder="Phone Number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
+                />
+                <input
+                  type="email"
+                  placeholder="Email Address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
+                />
+              </div>
+              <input
+                type="text"
+                placeholder="Vendor Street Address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Rating (1 to 5)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="5"
+                    value={vendorRating}
+                    onChange={(e) => setVendorRating(e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Dues Outstanding ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={paymentDueAmount}
+                    onChange={(e) => setPaymentDueAmount(e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none text-slate-200"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-350 text-xs font-semibold cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Save Supplier
               </button>
             </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Supplier / Company Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Fresh Veggies Ltd, Meat Distributors"
-                  className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Contact Person</label>
-                <input
-                  type="text"
-                  value={contactPerson}
-                  onChange={(e) => setContactPerson(e.target.value)}
-                  placeholder="e.g. Mr. John Doe"
-                  className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Phone Number</label>
-                  <input
-                    type="text"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+91 99999-99999"
-                    className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Email Address</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@supplier.com"
-                    className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Address</label>
-                <textarea
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Office/Warehouse address..."
-                  rows="2"
-                  className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                ></textarea>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-medium text-sm hover:bg-slate-850"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm rounded-xl"
-                >
-                  {isEditing ? 'Save Details' : 'Register Vendor'}
-                </button>
-              </div>
-            </form>
-          </div>
+          </form>
         </div>
       )}
-
     </div>
   );
 };

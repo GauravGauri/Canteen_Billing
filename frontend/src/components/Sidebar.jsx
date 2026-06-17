@@ -1,34 +1,69 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { NavLink } from 'react-router-dom';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { usePosStore } from '../store/usePosStore';
 import {
+  LayoutDashboard,
   Utensils,
   History,
   Boxes,
-  BookOpen,
   Users,
   ShoppingBag,
   LogOut,
   Sparkles,
-  LayoutDashboard,
+  Settings,
+  Bed,
+  Calendar,
+  Contact,
+  CreditCard,
+  Building,
+  ShieldAlert,
 } from 'lucide-react';
 
 const Sidebar = () => {
-  const { logout, user } = useAuth();
+  const { logout, user, hasRole, roleLabels } = useAuth();
   const isSidebarOpen = usePosStore((state) => state.isSidebarOpen);
   const setSidebarOpen = usePosStore((state) => state.setSidebarOpen);
 
-  const links = [
-    { to: '/dashboard', name: 'Dashboard', icon: LayoutDashboard },
-    { to: '/pos', name: 'POS Terminal', icon: Utensils },
-    { to: '/quick-bill', name: 'Quick Bill', icon: Sparkles },
-    { to: '/billing-history', name: 'Billing History', icon: History },
-    { to: '/inventory', name: 'Inventory', icon: Boxes },
-    { to: '/dish-creator', name: 'Dishes & Recipes', icon: BookOpen },
-    { to: '/suppliers', name: 'Suppliers', icon: Users },
-    { to: '/purchase-orders', name: 'Purchase Orders', icon: ShoppingBag },
+  // Grouped navigation structure with roles checking
+  const navigationGroups = [
+    {
+      title: 'POS & Billing',
+      roles: ['super_admin', 'admin', 'hotel_manager', 'front_desk', 'restaurant_staff', 'accountant'],
+      links: [
+        { to: '/dashboard', name: 'Dashboard', icon: LayoutDashboard, roles: ['super_admin', 'admin', 'hotel_manager', 'accountant'] },
+        { to: '/pos-billing', name: 'POS Billing', icon: Utensils, roles: ['super_admin', 'admin', 'hotel_manager', 'front_desk', 'restaurant_staff'] },
+        { to: '/pos-bill-history', name: 'Bill History', icon: History, roles: ['super_admin', 'admin', 'hotel_manager', 'front_desk', 'restaurant_staff', 'accountant'] },
+        { to: '/payment-reports', name: 'Payment Reports', icon: CreditCard, roles: ['super_admin', 'admin', 'accountant'] },
+      ],
+    },
+    {
+      title: 'Hotel Operations',
+      roles: ['super_admin', 'admin', 'hotel_manager', 'front_desk'],
+      links: [
+        { to: '/rooms', name: 'Rooms', icon: Bed, roles: ['super_admin', 'admin', 'hotel_manager', 'front_desk'] },
+        { to: '/reservations', name: 'Reservations', icon: Calendar, roles: ['super_admin', 'admin', 'hotel_manager', 'front_desk'] },
+        { to: '/guests', name: 'Guests', icon: Contact, roles: ['super_admin', 'admin', 'hotel_manager', 'front_desk'] },
+        { to: '/agents', name: 'Agents', icon: Building, roles: ['super_admin', 'admin', 'hotel_manager'] },
+        { to: '/groups', name: 'Groups', icon: Users, roles: ['super_admin', 'admin', 'hotel_manager'] },
+      ],
+    },
+    {
+      title: 'Inventory',
+      roles: ['super_admin', 'admin', 'hotel_manager', 'inventory_manager'],
+      links: [
+        { to: '/inventory', name: 'Stock Inventory', icon: Boxes, roles: ['super_admin', 'admin', 'hotel_manager', 'inventory_manager'] },
+        { to: '/suppliers', name: 'Suppliers', icon: Users, roles: ['super_admin', 'admin', 'hotel_manager', 'inventory_manager'] },
+        { to: '/purchase-orders', name: 'Purchase Orders', icon: ShoppingBag, roles: ['super_admin', 'admin', 'hotel_manager', 'inventory_manager'] },
+      ],
+    },
+    {
+      title: 'System',
+      roles: ['super_admin', 'admin', 'hotel_manager'],
+      links: [
+        { to: '/settings', name: 'Settings', icon: Settings, roles: ['super_admin', 'admin', 'hotel_manager'] },
+      ],
+    },
   ];
 
   return (
@@ -41,58 +76,76 @@ const Sidebar = () => {
         />
       )}
 
-      <aside className={`no-print w-64 bg-slate-950 border-r border-slate-800 flex flex-col justify-between h-screen fixed left-0 top-0 z-30 transition-transform duration-350 ${
+      <aside className={`no-print w-64 bg-slate-950 border-r border-slate-800/80 flex flex-col justify-between h-screen fixed left-0 top-0 z-30 transition-transform duration-300 ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } lg:translate-x-0`}>
+        
         {/* Brand Header */}
-        <div>
-          <div className="p-6 border-b border-slate-800/80 flex items-center gap-3">
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <div className="p-6 border-b border-slate-800/60 flex items-center gap-3">
             <div className="p-2 rounded-xl bg-brand-500/10 text-brand-400 border border-brand-500/20">
-              <Utensils className="w-6 h-6 animate-pulse" />
+              <Building className="w-6 h-6 text-brand-500" />
             </div>
             <div>
-              <h1 className="font-bold text-lg text-slate-100 leading-none">KK Food</h1>
-              <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Canteen POS</span>
+              <h1 className="font-bold text-base text-slate-100 leading-none tracking-wide">GRAND RESORT</h1>
+              <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Hotel ERP v2.0</span>
             </div>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="p-4 space-y-1">
-            {links.map((link) => {
-              const Icon = link.icon;
+          {/* Navigation Groups */}
+          <div className="p-4 space-y-6">
+            {navigationGroups.map((group) => {
+              // Check if user has role for the overall group
+              if (!hasRole(group.roles)) return null;
+
+              // Filter links that this user is allowed to see
+              const allowedLinks = group.links.filter((link) => hasRole(link.roles));
+              if (allowedLinks.length === 0) return null;
+
               return (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  onClick={() => setSidebarOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group text-sm font-medium ${isActive
-                      ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/15'
-                      : 'text-slate-400 hover:bg-slate-900/60 hover:text-slate-200'
-                    }`
-                  }
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    <Icon className="w-5 h-5 transition-transform duration-200 group-hover:scale-105" />
-                    <span>{link.name}</span>
+                <div key={group.title} className="space-y-1.5">
+                  <h3 className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    {group.title}
+                  </h3>
+                  <div className="space-y-0.5">
+                    {allowedLinks.map((link) => {
+                      const Icon = link.icon;
+                      return (
+                        <NavLink
+                          key={link.to}
+                          to={link.to}
+                          onClick={() => setSidebarOpen(false)}
+                          className={({ isActive }) =>
+                            `flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group text-xs font-medium ${
+                              isActive
+                                ? 'bg-brand-600 text-white shadow-md shadow-brand-600/15'
+                                : 'text-slate-400 hover:bg-slate-900/60 hover:text-slate-200'
+                            }`
+                          }
+                        >
+                          <Icon className="w-4.5 h-4.5 transition-transform duration-200 group-hover:scale-105" />
+                          <span>{link.name}</span>
+                        </NavLink>
+                      );
+                    })}
                   </div>
-                </NavLink>
+                </div>
               );
             })}
-          </nav>
+          </div>
         </div>
 
-        {/* Admin Profile & Logout */}
-        <div className="p-4 border-t border-slate-800/80 space-y-3">
-          <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-900/50 border border-slate-800/50">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center font-bold text-white text-sm shadow animate-pulse">
+        {/* User Profile Info & Logout */}
+        <div className="p-4 border-t border-slate-800/60 space-y-3 bg-slate-950">
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-900/40 border border-slate-800/40">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center font-bold text-white text-xs shadow-md">
               {user?.username?.slice(0, 2).toUpperCase() || 'AD'}
             </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-100 truncate max-w-[130px]">{user?.username || 'Admin'}</p>
-              <div className="flex items-center gap-1 text-[10px] text-brand-400 font-medium">
-                <Sparkles className="w-3 h-3" />
-                <span>Administrator</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-slate-200 truncate">{user?.username || 'Guest'}</p>
+              <div className="flex items-center gap-1 text-[9px] text-brand-400 font-semibold tracking-wider uppercase">
+                <Sparkles className="w-2.5 h-2.5" />
+                <span className="truncate">{roleLabels[user?.role] || 'User'}</span>
               </div>
             </div>
           </div>
@@ -102,9 +155,9 @@ const Sidebar = () => {
               setSidebarOpen(false);
               logout();
             }}
-            className="flex w-full items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors duration-200 cursor-pointer"
+            className="flex w-full items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors duration-200 cursor-pointer"
           >
-            <LogOut className="w-5 h-5" />
+            <LogOut className="w-4.5 h-4.5" />
             <span>Sign Out</span>
           </button>
         </div>

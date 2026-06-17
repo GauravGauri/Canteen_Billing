@@ -107,6 +107,8 @@ const getOrderById = async (req, res) => {
 const createOrder = async (req, res) => {
   const {
     tableId,
+    roomId,
+    reservationId,
     type,
     items,
     subTotal,
@@ -143,6 +145,8 @@ const createOrder = async (req, res) => {
     const order = await Order.create({
       billNo,
       tableId: type === 'dine-in' ? tableId : null,
+      roomId: type === 'room-service' ? roomId : null,
+      reservationId: type === 'room-service' ? reservationId : null,
       type,
       items,
       subTotal,
@@ -249,6 +253,9 @@ const updateOrder = async (req, res) => {
     if (paymentDetails !== undefined) {
       order.paymentDetails = paymentDetails;
     }
+
+    if (req.body.roomId) order.roomId = req.body.roomId;
+    if (req.body.reservationId) order.reservationId = req.body.reservationId;
 
     await order.save();
 

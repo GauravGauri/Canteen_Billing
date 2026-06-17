@@ -26,6 +26,10 @@ export const usePosStore = create((set, get) => ({
   paymentMethod: 'cash',
   paymentDetails: '',
   isSidebarOpen: false,
+  roomId: null,
+  reservationId: null,
+  setRoomId: (roomId) => set({ roomId }),
+  setReservationId: (reservationId) => set({ reservationId }),
 
   // Actions
   showMsg: (type, text) => {
@@ -263,7 +267,7 @@ export const usePosStore = create((set, get) => ({
 
   settleOrder: async (e) => {
     if (e) e.preventDefault();
-    const { cart, selectedTable, orderType, discount, onlinePlatform, currentOrder, paymentMethod, paymentDetails } = get();
+    const { cart, selectedTable, orderType, discount, onlinePlatform, currentOrder, paymentMethod, paymentDetails, roomId, reservationId } = get();
     if (cart.length === 0) return;
 
     set({ loading: true });
@@ -277,7 +281,9 @@ export const usePosStore = create((set, get) => ({
       if (!activeOrderToSettle) {
         const createPaidPayload = {
           tableId: selectedTable ? selectedTable._id : null,
-          type: orderType,
+          roomId: paymentMethod === 'room' ? roomId : null,
+          reservationId: paymentMethod === 'room' ? reservationId : null,
+          type: paymentMethod === 'room' ? 'room-service' : orderType,
           items: cart.map(item => ({
             dishId: (item.isCustom || String(item.dishId).startsWith('custom_')) ? null : item.dishId,
             name: item.name,
@@ -301,6 +307,9 @@ export const usePosStore = create((set, get) => ({
           status: 'paid',
           paymentMethod,
           paymentDetails: orderType === 'online' ? `Platform: ${onlinePlatform}` : paymentDetails,
+          roomId: paymentMethod === 'room' ? roomId : null,
+          reservationId: paymentMethod === 'room' ? reservationId : null,
+          type: paymentMethod === 'room' ? 'room-service' : orderType,
         });
         if (response.data.success) {
           activeOrderToSettle = response.data.data;
@@ -319,6 +328,8 @@ export const usePosStore = create((set, get) => ({
           orderType: 'takeaway',
           tableActiveOrders: [],
           paymentDetails: '',
+          roomId: null,
+          reservationId: null,
         });
         get().fetchTables();
       }
