@@ -84,6 +84,32 @@ const reservationSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    additionalGuests: [
+      {
+        name: {
+          type: String,
+          trim: true,
+        },
+        email: {
+          type: String,
+          trim: true,
+          lowercase: true,
+        },
+        phone: {
+          type: String,
+          trim: true,
+        },
+        idType: {
+          type: String,
+          trim: true,
+          default: 'Government ID',
+        },
+        idNumber: {
+          type: String,
+          trim: true,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

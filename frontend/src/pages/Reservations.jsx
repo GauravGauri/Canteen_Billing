@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import axios from 'axios';
 import { useHotelStore } from '../store/useHotelStore';
-import { Calendar, UserPlus, Filter, Plus, CalendarDays, RefreshCw, DollarSign } from 'lucide-react';
+import { Calendar, UserPlus, Filter, Plus, CalendarDays, RefreshCw, DollarSign, Users, Trash2, Edit } from 'lucide-react';
+import DatePicker from '../components/DatePicker';
 
 const Reservations = () => {
   const {
@@ -19,6 +20,7 @@ const Reservations = () => {
 
   const [showAddBooking, setShowAddBooking] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [showEditGuestsModal, setShowEditGuestsModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [folioData, setFolioData] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('cash');
@@ -31,12 +33,49 @@ const Reservations = () => {
   const [baseRate, setBaseRate] = useState('');
   const [advanceDeposit, setAdvanceDeposit] = useState('');
   const [bookingNotes, setBookingNotes] = useState('');
+  const [additionalGuests, setAdditionalGuests] = useState([]);
 
   useEffect(() => {
     fetchReservations();
     fetchRooms();
     fetchGuests();
   }, [fetchReservations, fetchRooms, fetchGuests]);
+
+  const handleAddAdditionalGuestField = () => {
+    setAdditionalGuests([
+      ...additionalGuests,
+      { name: '', phone: '', email: '', idType: 'Government ID', idNumber: '' }
+    ]);
+  };
+
+  const handleUpdateAdditionalGuestField = (index, field, value) => {
+    const updated = [...additionalGuests];
+    updated[index][field] = value;
+    setAdditionalGuests(updated);
+  };
+
+  const handleRemoveAdditionalGuestField = (index) => {
+    setAdditionalGuests(additionalGuests.filter((_, i) => i !== index));
+  };
+
+  const openEditGuestsFlow = (booking) => {
+    setSelectedBooking(booking);
+    setAdditionalGuests(booking.additionalGuests || []);
+    setShowEditGuestsModal(true);
+  };
+
+  const handleSaveGuests = async () => {
+    if (!selectedBooking) return;
+    const ok = await updateReservation(selectedBooking._id, {
+      additionalGuests,
+    });
+    if (ok) {
+      setShowEditGuestsModal(false);
+      setSelectedBooking(null);
+      setAdditionalGuests([]);
+      fetchReservations();
+    }
+  };
 
   const handleCreateBooking = async (e) => {
     e.preventDefault();
@@ -49,6 +88,7 @@ const Reservations = () => {
       baseRate: Number(baseRate),
       advanceDeposit: Number(advanceDeposit || 0),
       notes: bookingNotes,
+      additionalGuests,
     });
     if (ok) {
       setGuestId('');
@@ -58,6 +98,7 @@ const Reservations = () => {
       setBaseRate('');
       setAdvanceDeposit('');
       setBookingNotes('');
+      setAdditionalGuests([]);
       setShowAddBooking(false);
     }
   };
@@ -148,7 +189,19 @@ const Reservations = () => {
               <tbody className="divide-y divide-slate-800/50 text-slate-350">
                 {reservations.map((res) => (
                   <tr key={res._id} className="hover:bg-slate-900/30 transition-colors">
-                    <td className="px-6 py-4 font-bold text-slate-200">{res.guestId?.name}</td>
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-slate-200">{res.guestId?.name}</div>
+                      {res.groupBookingId?.groupName && (
+                        <div className="text-[9px] text-brand-400 font-bold mt-0.5 uppercase tracking-wider">
+                          Group: {res.groupBookingId.groupName}
+                        </div>
+                      )}
+                      {res.additionalGuests && res.additionalGuests.length > 0 && (
+                        <div className="text-[9px] text-slate-400 mt-1 font-medium italic">
+                          + {res.additionalGuests.length} stayer(s): {res.additionalGuests.map(g => g.name).join(', ')}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-6 py-4 font-semibold text-brand-400">
                       Room {res.roomId?.roomNo || 'N/A'}
                     </td>
@@ -158,6 +211,14 @@ const Reservations = () => {
                     <td className="px-6 py-4 font-semibold text-emerald-450">${res.advanceDeposit.toFixed(2)}</td>
                     <td className="px-6 py-4">{getStatusBadge(res.status)}</td>
                     <td className="px-6 py-4 text-right space-x-2">
+                      {(res.status === 'pending' || res.status === 'checked_in') && (
+                        <button
+                          onClick={() => openEditGuestsFlow(res)}
+                          className="px-2.5 py-1.5 border border-slate-800 hover:bg-slate-800 text-slate-350 rounded-lg text-[10px] font-bold cursor-pointer transition-all"
+                        >
+                          Edit Stayers ({res.additionalGuests?.length || 0})
+                        </button>
+                      )}
                       {res.status === 'pending' && (
                         <>
                           <button
@@ -242,26 +303,19 @@ const Reservations = () => {
 
                 {/* Dates */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Check-In</label>
-                    <input
-                      type="date"
-                      required
-                      value={checkInDate}
-                      onChange={(e) => setCheckInDate(e.target.value)}
-                      className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Check-Out</label>
-                    <input
-                      type="date"
-                      required
-                      value={checkOutDate}
-                      onChange={(e) => setCheckOutDate(e.target.value)}
-                      className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
-                    />
-                  </div>
+                  <DatePicker
+                    label="Check-In"
+                    required
+                    value={checkInDate}
+                    onChange={(val) => setCheckInDate(val)}
+                  />
+                  <DatePicker
+                    label="Check-Out"
+                    required
+                    value={checkOutDate}
+                    onChange={(val) => setCheckOutDate(val)}
+                    minDate={checkInDate}
+                  />
                 </div>
 
                 {/* Rates & Deposits */}
@@ -287,6 +341,78 @@ const Reservations = () => {
                       className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
                     />
                   </div>
+                </div>
+
+                {/* Additional Guests (Optional Stayers) */}
+                <div className="space-y-2 border-t border-slate-800/80 pt-3">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Additional Stayers (Optional)</label>
+                    <button
+                      type="button"
+                      onClick={handleAddAdditionalGuestField}
+                      className="flex items-center gap-1 text-[10px] text-brand-400 hover:text-brand-350 font-bold uppercase cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add Stayer
+                    </button>
+                  </div>
+                  {additionalGuests.length > 0 && (
+                    <div className="space-y-3 max-h-40 overflow-y-auto pr-1">
+                      {additionalGuests.map((g, index) => (
+                        <div key={index} className="p-3 bg-slate-950 border border-slate-850 rounded-xl space-y-2 relative">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAdditionalGuestField(index)}
+                            className="absolute top-2 right-2 text-slate-500 hover:text-red-400 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              required
+                              placeholder="Full Name"
+                              value={g.name}
+                              onChange={(e) => handleUpdateAdditionalGuestField(index, 'name', e.target.value)}
+                              className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Phone"
+                              value={g.phone}
+                              onChange={(e) => handleUpdateAdditionalGuestField(index, 'phone', e.target.value)}
+                              className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <select
+                              value={g.idType}
+                              onChange={(e) => handleUpdateAdditionalGuestField(index, 'idType', e.target.value)}
+                              className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
+                            >
+                              <option value="Government ID">Gov ID</option>
+                              <option value="Passport">Passport</option>
+                              <option value="Aadhaar">Aadhaar</option>
+                              <option value="Driving License">Driving License</option>
+                            </select>
+                            <input
+                              type="text"
+                              placeholder="ID Number"
+                              value={g.idNumber}
+                              onChange={(e) => handleUpdateAdditionalGuestField(index, 'idNumber', e.target.value)}
+                              className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
+                            />
+                          </div>
+                          <input
+                            type="email"
+                            placeholder="Email Address"
+                            value={g.email}
+                            onChange={(e) => handleUpdateAdditionalGuestField(index, 'email', e.target.value)}
+                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -409,6 +535,132 @@ const Reservations = () => {
                   className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl cursor-pointer shadow-md shadow-brand-600/10"
                 >
                   Settle & Checkout
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Modal: Edit Stayers */}
+        {showEditGuestsModal && selectedBooking && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-xs p-4">
+            <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-2xl">
+              <div className="flex justify-between items-center border-b border-slate-850 pb-2">
+                <h3 className="text-sm font-bold text-slate-200">Manage Additional Stayers</h3>
+                <span className="px-2 py-0.5 rounded bg-brand-500/10 border border-brand-500/20 text-brand-400 text-[10px] font-bold">
+                  Room {selectedBooking.roomId?.roomNo || 'N/A'}
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-400 font-semibold">
+                    Main Guest: <strong className="text-slate-200">{selectedBooking.guestId?.name}</strong>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleAddAdditionalGuestField}
+                    className="flex items-center gap-1 text-[10px] text-brand-400 hover:text-brand-350 font-bold uppercase cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add Stayer
+                  </button>
+                </div>
+
+                <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                  {additionalGuests.map((g, index) => (
+                    <div key={index} className="p-3 bg-slate-950 border border-slate-850 rounded-xl space-y-2 relative">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAdditionalGuestField(index)}
+                        className="absolute top-2 right-2 text-slate-500 hover:text-red-400 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-0.5">Full Name</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Full Name"
+                            value={g.name}
+                            onChange={(e) => handleUpdateAdditionalGuestField(index, 'name', e.target.value)}
+                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-0.5">Phone</label>
+                          <input
+                            type="text"
+                            placeholder="Phone"
+                            value={g.phone}
+                            onChange={(e) => handleUpdateAdditionalGuestField(index, 'phone', e.target.value)}
+                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-0.5">ID Type</label>
+                          <select
+                            value={g.idType}
+                            onChange={(e) => handleUpdateAdditionalGuestField(index, 'idType', e.target.value)}
+                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
+                          >
+                            <option value="Government ID">Gov ID</option>
+                            <option value="Passport">Passport</option>
+                            <option value="Aadhaar">Aadhaar</option>
+                            <option value="Driving License">Driving License</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-0.5">ID Number</label>
+                          <input
+                            type="text"
+                            placeholder="ID Number"
+                            value={g.idNumber}
+                            onChange={(e) => handleUpdateAdditionalGuestField(index, 'idNumber', e.target.value)}
+                            className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-0.5">Email</label>
+                        <input
+                          type="email"
+                          placeholder="Email Address"
+                          value={g.email}
+                          onChange={(e) => handleUpdateAdditionalGuestField(index, 'email', e.target.value)}
+                          className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {additionalGuests.length === 0 && (
+                    <p className="text-center text-xs text-slate-500 py-6 italic">
+                      No additional stayers registered. Click "Add Stayer" to add.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2 border-t border-slate-850">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditGuestsModal(false);
+                    setSelectedBooking(null);
+                    setAdditionalGuests([]);
+                  }}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-350 text-xs font-semibold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveGuests}
+                  className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl cursor-pointer shadow-md shadow-brand-600/10"
+                >
+                  Save Changes
                 </button>
               </div>
             </div>

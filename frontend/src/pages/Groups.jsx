@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { useHotelStore } from '../store/useHotelStore';
 import { Users, Plus, CheckSquare, Calendar, Building, Sparkles } from 'lucide-react';
+import DatePicker from '../components/DatePicker';
 
 const Groups = () => {
   const { groups, rooms, guests, fetchGroups, fetchRooms, fetchGuests, createGroup } = useHotelStore();
@@ -172,26 +173,19 @@ const Groups = () => {
 
               {/* Date pickers */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Check-In</label>
-                  <input
-                    type="date"
-                    required
-                    value={checkInDate}
-                    onChange={(e) => setCheckInDate(e.target.value)}
-                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Check-Out</label>
-                  <input
-                    type="date"
-                    required
-                    value={checkOutDate}
-                    onChange={(e) => setCheckOutDate(e.target.value)}
-                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
-                  />
-                </div>
+                <DatePicker
+                  label="Check-In"
+                  required
+                  value={checkInDate}
+                  onChange={(val) => setCheckInDate(val)}
+                />
+                <DatePicker
+                  label="Check-Out"
+                  required
+                  value={checkOutDate}
+                  onChange={(val) => setCheckOutDate(val)}
+                  minDate={checkInDate}
+                />
               </div>
 
               {/* Rooms Multi-Select Checklist */}

@@ -68,6 +68,7 @@ exports.createReservation = async (req, res) => {
       agentId,
       groupBookingId,
       notes,
+      additionalGuests,
     } = req.body;
 
     // 1. Verify Room availability
@@ -104,6 +105,7 @@ exports.createReservation = async (req, res) => {
       agentId: agentId || null,
       groupBookingId: groupBookingId || null,
       notes,
+      additionalGuests: additionalGuests || [],
       status: 'pending',
     });
 
@@ -210,6 +212,7 @@ exports.updateReservation = async (req, res) => {
     }
 
     if (req.body.notes !== undefined) reservation.notes = req.body.notes;
+    if (req.body.additionalGuests !== undefined) reservation.additionalGuests = req.body.additionalGuests;
 
     await reservation.save();
 
