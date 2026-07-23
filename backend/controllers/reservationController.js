@@ -71,30 +71,54 @@ exports.createReservation = async (req, res) => {
       additionalGuests,
     } = req.body;
 
-    // 1. Verify Room availability
+    // 1. Validate dates
+    const start = new Date(checkInDate);
+    start.setHours(0,0,0,0);
+    const end = new Date(checkOutDate);
+    end.setHours(0,0,0,0);
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    if (start < today) {
+      return res.status(400).json({ success: false, message: 'Check-in date cannot be in the past' });
+    }
+    if (end <= start) {
+      return res.status(400).json({ success: false, message: 'Check-out date must be after check-in date' });
+    }
+
+    // 2. Verify Room exists
     const room = await Room.findById(roomId);
     if (!room) {
       return res.status(404).json({ success: false, message: 'Room not found' });
     }
 
-    if (room.status !== 'available' && room.status !== 'cleaning') {
-      return res.status(400).json({ success: false, message: `Room is not available (Status: ${room.status})` });
+    // 3. Check for overlapping reservations for this room
+    const overlap = await Reservation.findOne({
+      roomId: roomId,
+      status: { $in: ['pending', 'checked_in'] },
+      checkInDate: { $lt: end },
+      checkOutDate: { $gt: start }
+    }).populate('guestId');
+
+    if (overlap) {
+      return res.status(400).json({
+        success: false,
+        message: `Room is already booked by ${overlap.guestId?.name || 'another guest'} from ${new Date(overlap.checkInDate).toLocaleDateString()} to ${new Date(overlap.checkOutDate).toLocaleDateString()}`
+      });
     }
 
     // Calculate nights
-    const start = new Date(checkInDate);
-    const end = new Date(checkOutDate);
     const timeDiff = Math.abs(end.getTime() - start.getTime());
     const nights = Math.ceil(timeDiff / (1000 * 3600 * 24)) || 1;
     const totalRoomCharges = baseRate * nights;
     const totalAmount = totalRoomCharges - (req.body.discount || 0);
 
-    // 2. Create reservation
+    // 4. Create reservation
     const reservation = await Reservation.create({
       guestId,
       roomId,
-      checkInDate,
-      checkOutDate,
+      checkInDate: start,
+      checkOutDate: end,
       baseRate,
       advanceDeposit: advanceDeposit || 0,
       totalRoomCharges,
@@ -109,10 +133,14 @@ exports.createReservation = async (req, res) => {
       status: 'pending',
     });
 
-    // 3. Mark room as reserved
-    room.status = 'reserved';
-    room.currentReservationId = reservation._id;
-    await room.save();
+    // 5. Update room status ONLY if check-in is today
+    const todayStr = today.toISOString().slice(0, 10);
+    const checkInStr = start.toISOString().slice(0, 10);
+    if (checkInStr === todayStr) {
+      room.status = 'reserved';
+      room.currentReservationId = reservation._id;
+      await room.save();
+    }
 
     res.status(201).json({ success: true, data: reservation });
   } catch (err) {
@@ -136,12 +164,26 @@ exports.updateReservation = async (req, res) => {
 
     // Handle Check-in flow
     if (status === 'checked_in' && reservation.status !== 'checked_in') {
-      reservation.status = 'checked_in';
       if (room) {
+        // Validate if room is currently occupied by someone else
+        if (room.status === 'occupied' && String(room.currentReservationId) !== String(reservation._id)) {
+          return res.status(400).json({ success: false, message: 'Room is currently occupied by another guest. Please checkout the previous guest first.' });
+        }
+
+        // Validate if check-in is permitted today
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const start = new Date(reservation.checkInDate);
+        start.setHours(0,0,0,0);
+        if (today < start) {
+          return res.status(400).json({ success: false, message: 'Cannot check-in before the scheduled check-in date.' });
+        }
+
         room.status = 'occupied';
         room.currentReservationId = reservation._id;
         await room.save();
       }
+      reservation.status = 'checked_in';
       // Increment Guest visit counts
       await Guest.findByIdAndUpdate(reservation.guestId, { $inc: { visitCount: 1 } });
     }
@@ -181,14 +223,45 @@ exports.updateReservation = async (req, res) => {
 
     // Standard field updates
     if (baseRate !== undefined || checkInDate !== undefined || checkOutDate !== undefined) {
+      const newCheckIn = checkInDate ? new Date(checkInDate) : new Date(reservation.checkInDate);
+      newCheckIn.setHours(0,0,0,0);
+      const newCheckOut = checkOutDate ? new Date(checkOutDate) : new Date(reservation.checkOutDate);
+      newCheckOut.setHours(0,0,0,0);
+      const today = new Date();
+      today.setHours(0,0,0,0);
+
+      // Validate check-in date only if it was modified and is still in pending status
+      if (checkInDate && reservation.status === 'pending' && newCheckIn < today) {
+        return res.status(400).json({ success: false, message: 'Check-in date cannot be in the past' });
+      }
+      if (newCheckOut <= newCheckIn) {
+        return res.status(400).json({ success: false, message: 'Check-out date must be after check-in date' });
+      }
+
+      // Check for overlap if date changed
+      if (checkInDate || checkOutDate) {
+        const overlap = await Reservation.findOne({
+          roomId: reservation.roomId,
+          status: { $in: ['pending', 'checked_in'] },
+          _id: { $ne: reservation._id }, // ignore current reservation
+          checkInDate: { $lt: newCheckOut },
+          checkOutDate: { $gt: newCheckIn }
+        }).populate('guestId');
+
+        if (overlap) {
+          return res.status(400).json({
+            success: false,
+            message: `Room is already booked by ${overlap.guestId?.name || 'another guest'} from ${new Date(overlap.checkInDate).toLocaleDateString()} to ${new Date(overlap.checkOutDate).toLocaleDateString()}`
+          });
+        }
+      }
+
       if (baseRate) reservation.baseRate = baseRate;
-      if (checkInDate) reservation.checkInDate = checkInDate;
-      if (checkOutDate) reservation.checkOutDate = checkOutDate;
+      reservation.checkInDate = newCheckIn;
+      reservation.checkOutDate = newCheckOut;
 
       // Recalculate nights and charges
-      const start = new Date(reservation.checkInDate);
-      const end = new Date(reservation.checkOutDate);
-      const timeDiff = Math.abs(end.getTime() - start.getTime());
+      const timeDiff = Math.abs(newCheckOut.getTime() - newCheckIn.getTime());
       const nights = Math.ceil(timeDiff / (1000 * 3600 * 24)) || 1;
       
       reservation.totalRoomCharges = reservation.baseRate * nights;
