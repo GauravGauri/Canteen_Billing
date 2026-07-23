@@ -43,6 +43,54 @@ const Reservations = () => {
     fetchGuests();
   }, [fetchReservations, fetchRooms, fetchGuests]);
 
+  const getAvailableRooms = () => {
+    if (!checkInDate || !checkOutDate) return [];
+    const start = new Date(checkInDate);
+    start.setHours(0,0,0,0);
+    const end = new Date(checkOutDate);
+    end.setHours(0,0,0,0);
+
+    if (end <= start) return [];
+
+    return rooms.filter((room) => {
+      // Exclude rooms in maintenance or out of service
+      if (room.status === 'maintenance' || room.status === 'out_of_service') return false;
+
+      // Check if room has an overlapping reservation
+      const hasOverlap = (reservations || []).some((res) => {
+        if (res.roomId?._id !== room._id) return false;
+        if (res.status === 'cancelled' || res.status === 'checked_out') return false;
+
+        const resStart = new Date(res.checkInDate);
+        resStart.setHours(0,0,0,0);
+        const resEnd = new Date(res.checkOutDate);
+        resEnd.setHours(0,0,0,0);
+
+        return resStart < end && resEnd > start;
+      });
+
+      return !hasOverlap;
+    });
+  };
+
+  useEffect(() => {
+    if (roomId && (checkInDate || checkOutDate)) {
+      const isAvailable = getAvailableRooms().some(r => r._id === roomId);
+      if (!isAvailable) {
+        setRoomId('');
+      }
+    }
+  }, [checkInDate, checkOutDate]);
+
+  useEffect(() => {
+    if (roomId) {
+      const selectedRoom = rooms.find(r => r._id === roomId);
+      if (selectedRoom?.categoryId?.basePrice) {
+        setBaseRate(selectedRoom.categoryId.basePrice.toString());
+      }
+    }
+  }, [roomId, rooms]);
+
   const handleAddAdditionalGuestField = () => {
     // Check occupancy limit
     let maxOccupancy = 2;
@@ -408,23 +456,6 @@ const Reservations = () => {
                   {errors.guestId && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.guestId}</p>}
                 </div>
 
-                {/* Room Selection */}
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Select Available Room</label>
-                  <select
-                    required
-                    value={roomId}
-                    onChange={(e) => setRoomId(e.target.value)}
-                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none"
-                  >
-                    <option value="">-- Choose Available Room --</option>
-                    {rooms.filter(room => room.status === 'available').map((r) => (
-                      <option key={r._id} value={r._id}>Room {r.roomNo} - {r.categoryId?.name} (${r.categoryId?.basePrice}/night)</option>
-                    ))}
-                  </select>
-                  {errors.roomId && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.roomId}</p>}
-                </div>
-
                 {/* Dates */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -446,6 +477,30 @@ const Reservations = () => {
                     />
                     {errors.checkOutDate && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.checkOutDate}</p>}
                   </div>
+                </div>
+
+                {/* Room Selection */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Select Available Room</label>
+                  <select
+                    required
+                    value={roomId}
+                    onChange={(e) => setRoomId(e.target.value)}
+                    disabled={!checkInDate || !checkOutDate}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none disabled:opacity-50"
+                  >
+                    {!checkInDate || !checkOutDate ? (
+                      <option value="">-- Please Select Dates First --</option>
+                    ) : (
+                      <>
+                        <option value="">-- Choose Available Room --</option>
+                        {getAvailableRooms().map((r) => (
+                          <option key={r._id} value={r._id}>Room {r.roomNo} - {r.categoryId?.name} (${r.categoryId?.basePrice}/night)</option>
+                        ))}
+                      </>
+                    )}
+                  </select>
+                  {errors.roomId && <p className="text-red-400 text-[10px] mt-0.5 font-bold">{errors.roomId}</p>}
                 </div>
 
                 {/* Rates & Deposits */}

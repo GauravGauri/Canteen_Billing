@@ -14,7 +14,7 @@ const STATUS_CONFIGS = {
 };
 
 const Rooms = () => {
-  const { rooms, categories, fetchRooms, fetchRoomCategories, createRoom, updateRoom, createRoomCategory } = useHotelStore();
+  const { rooms, categories, reservations, fetchRooms, fetchRoomCategories, fetchReservations, createRoom, updateRoom, createRoomCategory } = useHotelStore();
   const [statusFilter, setStatusFilter] = useState('');
   const [catFilter, setCatFilter] = useState('');
   const [showAddRoom, setShowAddRoom] = useState(false);
@@ -36,7 +36,8 @@ const Rooms = () => {
   useEffect(() => {
     fetchRooms();
     fetchRoomCategories();
-  }, [fetchRooms, fetchRoomCategories]);
+    fetchReservations();
+  }, [fetchRooms, fetchRoomCategories, fetchReservations]);
 
   const handleCreateRoom = async (e) => {
     e.preventDefault();
@@ -126,6 +127,15 @@ const Rooms = () => {
     const catMatch = !catFilter || room.categoryId?._id === catFilter;
     return statusMatch && catMatch;
   });
+
+  const getNextBooking = (roomId) => {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const roomReservations = (reservations || [])
+      .filter((res) => res.roomId?._id === roomId && res.status === 'pending' && new Date(res.checkInDate) > today)
+      .sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate));
+    return roomReservations[0];
+  };
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 pl-0 lg:pl-64">
@@ -227,6 +237,21 @@ const Rooms = () => {
                   {room.notes && (
                     <p className="text-[10px] text-slate-500 italic truncate">{room.notes}</p>
                   )}
+
+                  {(() => {
+                    const nextRes = getNextBooking(room._id);
+                    if (nextRes) {
+                      return (
+                        <div className="bg-slate-950 p-2 rounded-xl border border-slate-850 flex justify-between items-center text-[10px] mt-2">
+                          <span className="text-slate-500 font-bold uppercase tracking-wider">Next Booking:</span>
+                          <span className="text-brand-400 font-bold">
+                            {new Date(nextRes.checkInDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
 
                 {/* Status Switcher Controls */}
